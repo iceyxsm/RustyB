@@ -8,5 +8,4 @@ pub mod tls;
 
 pub use filter::*;
 pub use interceptor::*;
-pub use logger::*;
 pub use proxy::*;

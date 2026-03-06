@@ -82,8 +82,9 @@ impl Tab {
             };
 
             // Remove forward history if navigating from middle
-            if nav.current_index < nav.history.len() - 1 {
-                nav.history.truncate(nav.current_index + 1);
+            let current_index = nav.current_index;
+            if current_index < nav.history.len().saturating_sub(1) {
+                nav.history.truncate(current_index + 1);
             }
 
             nav.history.push(entry);
@@ -139,7 +140,8 @@ impl Tab {
         
         // Also update history
         let mut nav = self.navigation.write().await;
-        if let Some(entry) = nav.history.get_mut(nav.current_index) {
+        let current_index = nav.current_index;
+        if let Some(entry) = nav.history.get_mut(current_index) {
             entry.title = Some(title);
         }
     }

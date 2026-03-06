@@ -64,10 +64,12 @@ impl Window {
 
     pub async fn update_title(&self) {
         let active_tab = self.tab_manager.get_active_tab().await;
-        let tab_title = active_tab
-            .as_ref()
-            .and_then(|t| t.state.read().await.title.clone())
-            .unwrap_or_else(|| "New Tab".to_string());
+        let tab_title = if let Some(tab) = active_tab {
+            let state = tab.get_state().await;
+            state.title.unwrap_or_else(|| "New Tab".to_string())
+        } else {
+            "New Tab".to_string()
+        };
 
         let mut title = self.title.write().await;
         *title = format!("{} - Rusty Browser", tab_title);

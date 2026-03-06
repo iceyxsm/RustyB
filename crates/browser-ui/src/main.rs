@@ -4,28 +4,20 @@ mod app;
 mod views;
 mod widgets;
 
-use app::BrowserApp;
-use iced::{Application, Settings};
+use app::{BrowserApp, Message};
 use tracing_subscriber;
 
 fn main() -> iced::Result {
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
-    BrowserApp::run(Settings {
-        window: iced::window::Settings {
-            size: iced::Size::new(1280.0, 720.0),
-            position: iced::window::Position::Default,
-            min_size: Some(iced::Size::new(800.0, 600.0)),
-            max_size: None,
-            visible: true,
-            resizable: true,
-            decorations: true,
-            transparent: false,
-            always_on_top: false,
-            icon: None,
-            ..Default::default()
-        },
-        ..Default::default()
-    })
+    iced::run("Rusty Browser", update, view)
+}
+
+fn update(app: &mut BrowserApp, message: Message) -> iced::Task<Message> {
+    app.update(message)
+}
+
+fn view(app: &BrowserApp) -> iced::Element<Message> {
+    app.view()
 }

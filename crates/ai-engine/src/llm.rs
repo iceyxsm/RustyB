@@ -1,12 +1,10 @@
 //! Local LLM integration using Candle
 
 use async_trait::async_trait;
-use candle_core::{Device, Tensor};
-use candle_transformers::generation::LogitsProcessor;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, error, info};
+use tracing::{debug, info};
 
 /// Configuration for text generation
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,6 +67,16 @@ pub enum MessageRole {
     Assistant,
 }
 
+impl std::fmt::Display for MessageRole {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MessageRole::System => write!(f, "system"),
+            MessageRole::User => write!(f, "user"),
+            MessageRole::Assistant => write!(f, "assistant"),
+        }
+    }
+}
+
 /// Model information
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelInfo {
@@ -81,32 +89,28 @@ pub struct ModelInfo {
 
 /// Candle-based LLM implementation
 pub struct CandleLlm {
-    model: Arc<RwLock<Option<candle_transformers::models::llama::Llama>>>,
+    model: Arc<RwLock<Option<()>>>, // Placeholder for actual model
     tokenizer: Arc<RwLock<Option<tokenizers::Tokenizer>>>,
-    device: Device,
     model_info: ModelInfo,
 }
 
 impl CandleLlm {
     pub fn new(model_name: impl Into<String>) -> Self {
-        let device = Device::cuda_if_available(0).unwrap_or(Device::Cpu);
-        
         Self {
             model: Arc::new(RwLock::new(None)),
             tokenizer: Arc::new(RwLock::new(None)),
-            device,
             model_info: ModelInfo {
                 name: model_name.into(),
                 version: "1.0".to_string(),
                 parameters: "7B".to_string(),
                 context_length: 4096,
-                device: if device.is_cuda() { "CUDA".to_string() } else { "CPU".to_string() },
+                device: "CPU".to_string(),
             },
         }
     }
 
-    pub async fn load(&self, model_path: &str, tokenizer_path: &str) -> anyhow::Result<()> {
-        info!("Loading model from: {}", model_path);
+    pub async fn load(&self, _model_path: &str, tokenizer_path: &str) -> anyhow::Result<()> {
+        info!("Loading model");
         
         // Load tokenizer
         let tokenizer = tokenizers::Tokenizer::from_file(tokenizer_path)
@@ -114,84 +118,43 @@ impl CandleLlm {
         
         *self.tokenizer.write().await = Some(tokenizer);
         
-        // Load model (simplified - actual implementation would load weights)
         debug!("Model loading not fully implemented");
         
         Ok(())
-    }
-
-    fn sample_token(
-        &self,
-        logits: &Tensor,
-        logits_processor: &mut LogitsProcessor,
-    ) -> anyhow::Result<u32> {
-        let logits = logits.to_dtype(candle_core::DType::F32)?;
-        let logits = logits.squeeze(0)?.squeeze(0)?;
-        let token = logits_processor.sample(&logits)?;
-        Ok(token)
     }
 }
 
 #[async_trait]
 impl LocalLlm for CandleLlm {
-    async fn generate(&self, prompt: &str, options: GenerationOptions) -> anyhow::Result<String> {
+    async fn generate(&self, prompt: &str, _options: GenerationOptions) -> anyhow::Result<String> {
         let tokenizer = self.tokenizer.read().await;
-        let tokenizer = tokenizer.as_ref().ok_or_else(|| {
+        let _tokenizer = tokenizer.as_ref().ok_or_else(|| {
             anyhow::anyhow!("Tokenizer not loaded")
         })?;
 
-        // Encode prompt
-        let encoding = tokenizer.encode(prompt, true)
-            .map_err(|e| anyhow::anyhow!("Tokenization error: {}", e))?;
-        let mut tokens = encoding.get_ids().to_vec();
-
-        // Generate
-        let mut logits_processor = LogitsProcessor::new(
-            42, // seed
-            Some(options.temperature as f64),
-            Some(options.top_p as f64),
-        );
-
-        let mut generated_tokens = Vec::new();
-        
-        for _ in 0..options.max_tokens {
-            // This is a simplified version - actual implementation would use the model
-            // For now, return a placeholder
-            if generated_tokens.len() >= 10 {
-                break;
-            }
-            generated_tokens.push(1u32);
-        }
-
-        // Decode
-        let output = tokenizer.decode(&generated_tokens, false)
-            .map_err(|e| anyhow::anyhow!("Decoding error: {}", e))?;
-
-        Ok(output)
+        // Placeholder implementation
+        Ok(format!("Generated response for: {}", &prompt[..prompt.len().min(50)]))
     }
 
     async fn chat(&self, messages: &[ChatMessage], options: GenerationOptions) -> anyhow::Result<String> {
         // Format messages into a prompt
         let prompt = messages.iter()
-            .map(|m| format!("{:?}: {}", m.role, m.content))
+            .map(|m| format!("{}: {}", m.role, m.content))
             .collect::<Vec<_>>()
             .join("\n");
         
         self.generate(&prompt, options).await
     }
 
-    fn tokenize(&self, text: &str) -> anyhow::Result<Vec<u32>> {
-        // Would need to use the tokenizer
+    fn tokenize(&self, _text: &str) -> anyhow::Result<Vec<u32>> {
         Ok(vec![])
     }
 
-    fn decode(&self, tokens: &[u32]) -> anyhow::Result<String> {
-        // Would need to use the tokenizer
+    fn decode(&self, _tokens: &[u32]) -> anyhow::Result<String> {
         Ok(String::new())
     }
 
     fn is_loaded(&self) -> bool {
-        // Check if model is loaded
         false
     }
 

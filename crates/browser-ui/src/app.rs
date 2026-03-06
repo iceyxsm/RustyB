@@ -3,8 +3,8 @@
 use crate::views::{address_bar::AddressBar, tab_bar::TabBar, toolbar::Toolbar};
 use browser_core::session::BrowserSession;
 use iced::{
-    widget::{column, container, row, text},
-    Application, Command, Element, Length, Theme,
+    widget::{column, container, text},
+    Element, Length, Task, Theme,
 };
 use shared::BrowserConfig;
 use std::sync::Arc;
@@ -48,13 +48,8 @@ pub enum Message {
     LoadingFailed(String),
 }
 
-impl Application for BrowserApp {
-    type Message = Message;
-    type Theme = Theme;
-    type Executor = iced::executor::Default;
-    type Flags = ();
-
-    fn new(_flags: ()) -> (Self, Command<Message>) {
+impl BrowserApp {
+    pub fn new() -> (Self, Task<Message>) {
         info!("Initializing Rusty Browser");
         
         let config = BrowserConfig::default();
@@ -71,7 +66,7 @@ impl Application for BrowserApp {
         
         // Start the session
         let session_clone = Arc::clone(&app.session);
-        let init_cmd = Command::perform(
+        let init_task = Task::perform(
             async move {
                 let session = session_clone.read().await;
                 let _ = session.start().await;
@@ -79,21 +74,21 @@ impl Application for BrowserApp {
             |_| Message::NavigateTo("https://start.duckduckgo.com".to_string()),
         );
         
-        (app, init_cmd)
+        (app, init_task)
     }
 
-    fn title(&self) -> String {
+    pub fn title(&self) -> String {
         match &self.active_tab_title {
             Some(title) if !title.is_empty() => format!("{} - Rusty Browser", title),
             _ => "Rusty Browser".to_string(),
         }
     }
 
-    fn update(&mut self, message: Message) -> Command<Message> {
+    pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::UrlChanged(url) => {
                 self.current_url = url;
-                Command::none()
+                Task::none()
             }
             
             Message::NavigateSubmitted => {
@@ -104,7 +99,7 @@ impl Application for BrowserApp {
                     format!("https://{}", self.current_url)
                 };
                 
-                Command::perform(async move { url }, Message::NavigateTo)
+                Task::done(Message::NavigateTo(url))
             }
             
             Message::NavigateTo(url) => {
@@ -113,7 +108,7 @@ impl Application for BrowserApp {
                 self.is_loading = true;
                 
                 let session = Arc::clone(&self.session);
-                Command::perform(
+                Task::perform(
                     async move {
                         let session = session.read().await;
                         if let Some(window) = session.window_manager.get_active_window().await {
@@ -128,7 +123,7 @@ impl Application for BrowserApp {
             
             Message::GoBack => {
                 let session = Arc::clone(&self.session);
-                Command::perform(
+                Task::perform(
                     async move {
                         let session = session.read().await;
                         if let Some(window) = session.window_manager.get_active_window().await {
@@ -153,7 +148,7 @@ impl Application for BrowserApp {
             
             Message::GoForward => {
                 let session = Arc::clone(&self.session);
-                Command::perform(
+                Task::perform(
                     async move {
                         let session = session.read().await;
                         if let Some(window) = session.window_manager.get_active_window().await {
@@ -178,7 +173,7 @@ impl Application for BrowserApp {
             
             Message::Reload => {
                 let session = Arc::clone(&self.session);
-                Command::perform(
+                Task::perform(
                     async move {
                         let session = session.read().await;
                         if let Some(window) = session.window_manager.get_active_window().await {
@@ -203,12 +198,12 @@ impl Application for BrowserApp {
             
             Message::StopLoading => {
                 self.is_loading = false;
-                Command::none()
+                Task::none()
             }
             
             Message::NewTab => {
                 let session = Arc::clone(&self.session);
-                Command::perform(
+                Task::perform(
                     async move {
                         let session = session.read().await;
                         if let Some(window) = session.window_manager.get_active_window().await {
@@ -230,7 +225,7 @@ impl Application for BrowserApp {
             
             Message::CloseTab(tab_id) => {
                 let session = Arc::clone(&self.session);
-                Command::perform(
+                Task::perform(
                     async move {
                         let session = session.read().await;
                         if let Some(window) = session.window_manager.get_active_window().await {
@@ -245,7 +240,7 @@ impl Application for BrowserApp {
             
             Message::SwitchTab(tab_id) => {
                 let session = Arc::clone(&self.session);
-                Command::perform(
+                Task::perform(
                     async move {
                         let session = session.read().await;
                         if let Some(window) = session.window_manager.get_active_window().await {
@@ -260,7 +255,7 @@ impl Application for BrowserApp {
                             (None, None)
                         }
                     },
-                    |(url, title)| {
+                    |(url, _title)| {
                         if let Some(u) = url {
                             Message::UrlChanged(u)
                         } else {
@@ -274,12 +269,12 @@ impl Application for BrowserApp {
                 if self.active_tab_title.as_ref() != Some(&title) {
                     self.active_tab_title = Some(title);
                 }
-                Command::none()
+                Task::none()
             }
             
             Message::WindowResized(width, height) => {
                 let session = Arc::clone(&self.session);
-                Command::perform(
+                Task::perform(
                     async move {
                         let session = session.read().await;
                         if let Some(window) = session.window_manager.get_active_window().await {
@@ -292,45 +287,23 @@ impl Application for BrowserApp {
             
             Message::LoadingStarted => {
                 self.is_loading = true;
-                Command::none()
+                Task::none()
             }
             
             Message::LoadingFinished => {
                 self.is_loading = false;
-                
-                // Update navigation state
-                let session = Arc::clone(&self.session);
-                Command::perform(
-                    async move {
-                        let session = session.read().await;
-                        if let Some(window) = session.window_manager.get_active_window().await {
-                            if let Some(tab) = window.tab_manager.get_active_tab().await {
-                                let nav_state = tab.get_navigation_state().await;
-                                (nav_state.can_go_back, nav_state.can_go_forward)
-                            } else {
-                                (false, false)
-                            }
-                        } else {
-                            (false, false)
-                        }
-                    },
-                    |(back, forward)| {
-                        // We need to update these in the state
-                        // For now, just return a no-op
-                        Message::LoadingFinished
-                    },
-                )
+                Task::none()
             }
             
             Message::LoadingFailed(error) => {
                 debug!("Loading failed: {}", error);
                 self.is_loading = false;
-                Command::none()
+                Task::none()
             }
         }
     }
 
-    fn view(&self) -> Element<Message> {
+    pub fn view(&self) -> Element<Message> {
         // Toolbar with navigation buttons
         let toolbar = Toolbar::new()
             .on_back(Message::GoBack)
@@ -372,7 +345,13 @@ impl Application for BrowserApp {
         .into()
     }
 
-    fn theme(&self) -> Theme {
+    pub fn theme(&self) -> Theme {
         Theme::Dark
+    }
+}
+
+impl Default for BrowserApp {
+    fn default() -> Self {
+        Self::new().0
     }
 }

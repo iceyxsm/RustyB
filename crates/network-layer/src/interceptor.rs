@@ -6,7 +6,6 @@ use reqwest::{Client, Request, Response};
 use reqwest_middleware::{Middleware, Next};
 use shared::{Request as BrowserRequest, Response as BrowserResponse};
 use std::sync::Arc;
-use task_local_extensions::Extensions;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
@@ -21,7 +20,7 @@ impl Middleware for InterceptorMiddleware {
     async fn handle(
         &self,
         req: Request,
-        extensions: &mut Extensions,
+        extensions: &mut http::Extensions,
         next: Next<'_>,
     ) -> reqwest_middleware::Result<Response> {
         // Convert to browser request format
@@ -228,7 +227,7 @@ pub struct TracingLogger;
 impl RequestLogger for TracingLogger {
     async fn log_request(&self, request: &BrowserRequest) {
         debug!(
-            "[REQUEST] {} {} - {:?}",
+            "[REQUEST] {:?} {} - {:?}",
             request.method, request.url, request.id
         );
     }
