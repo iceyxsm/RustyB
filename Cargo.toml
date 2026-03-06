@@ -80,8 +80,11 @@ candle-transformers = "0.9"
 tokenizers = "0.21"
 
 # UI (Iced)
-iced = { version = "0.14", features = ["wgpu", "tokio", "debug"] }
+iced = { version = "0.14", features = ["wgpu", "tokio", "debug", "advanced", "image"] }
 iced_aw = { version = "0.12", features = ["tabs", "menu"] }
+
+# Window handling
+raw-window-handle = "0.6"
 
 # Storage
 sled = "0.34"

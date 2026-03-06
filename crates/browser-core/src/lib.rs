@@ -3,6 +3,7 @@
 pub mod navigation;
 pub mod session;
 pub mod tab;
+pub mod webview;
 pub mod window;
 
 pub use navigation::*;

@@ -39,6 +39,8 @@ tracing-subscriber.workspace = true
 # Utilities
 uuid.workspace = true
 chrono.workspace = true
+raw-window-handle.workspace = true
+parking_lot.workspace = true
 
 # HTTP
 reqwest.workspace = true
