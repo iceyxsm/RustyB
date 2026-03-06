@@ -1,0 +1,42 @@
+[package]
+name = "browser-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+shared.workspace = true
+network-layer.workspace = true
+
+# Async
+tokio.workspace = true
+async-trait.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Error handling
+anyhow.workspace = true
+thiserror.workspace = true
+
+# Logging
+tracing.workspace = true
+
+# HTTP
+reqwest.workspace = true
+http.workspace = true
+
+# HTML Parsing
+scraper.workspace = true
+
+# Utilities
+uuid.workspace = true
+chrono.workspace = true
+dashmap.workspace = true
+parking_lot.workspace = true
+
+[dev-dependencies]
+tokio-test.workspace = true

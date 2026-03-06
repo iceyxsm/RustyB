@@ -1,0 +1,43 @@
+[package]
+name = "remote-api"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+shared.workspace = true
+browser-core.workspace = true
+
+# WebSocket
+tokio-tungstenite.workspace = true
+
+# HTTP
+axum.workspace = true
+tower.workspace = true
+http.workspace = true
+
+# Async
+tokio.workspace = true
+async-trait.workspace = true
+futures.workspace = true
+futures-util.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Error handling
+anyhow.workspace = true
+thiserror.workspace = true
+
+# Logging
+tracing.workspace = true
+
+# Utilities
+uuid.workspace = true
+chrono.workspace = true
+
+[dev-dependencies]
+tokio-test.workspace = true

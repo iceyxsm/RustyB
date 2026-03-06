@@ -1,0 +1,47 @@
+[package]
+name = "browser-ui"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "rusty-browser"
+path = "src/main.rs"
+
+[dependencies]
+shared.workspace = true
+browser-core.workspace = true
+network-layer.workspace = true
+web-to-api.workspace = true
+ai-engine.workspace = true
+remote-api.workspace = true
+
+# UI
+iced.workspace = true
+iced_aw.workspace = true
+
+# Async
+tokio.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Error handling
+anyhow.workspace = true
+
+# Logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# Utilities
+uuid.workspace = true
+chrono.workspace = true
+
+# HTTP
+reqwest.workspace = true
+
+[dev-dependencies]
+tokio-test.workspace = true
