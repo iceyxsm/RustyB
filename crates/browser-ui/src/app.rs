@@ -1,10 +1,9 @@
-//! Main browser application using Iced
+//! Main browser application using Iced 0.14
 
-use crate::views::{address_bar::AddressBar, tab_bar::TabBar, toolbar::Toolbar};
 use browser_core::session::BrowserSession;
 use iced::{
-    widget::{column, container, text},
-    Element, Length, Task, Theme,
+    widget::{button, column, container, row, text, text_input},
+    Center, Element, Length, Task, Theme,
 };
 use shared::BrowserConfig;
 use std::sync::Arc;
@@ -12,12 +11,11 @@ use tokio::sync::RwLock;
 use tracing::{debug, info};
 
 /// Main browser application state
+#[derive(Debug)]
 pub struct BrowserApp {
     session: Arc<RwLock<BrowserSession>>,
     current_url: String,
     is_loading: bool,
-    can_go_back: bool,
-    can_go_forward: bool,
     active_tab_title: Option<String>,
 }
 
@@ -37,10 +35,6 @@ pub enum Message {
     NewTab,
     CloseTab(uuid::Uuid),
     SwitchTab(uuid::Uuid),
-    TabTitleChanged(uuid::Uuid, String),
-    
-    // Window
-    WindowResized(u32, u32),
     
     // Loading state
     LoadingStarted,
@@ -48,35 +42,21 @@ pub enum Message {
     LoadingFailed(String),
 }
 
-impl BrowserApp {
-    pub fn new() -> (Self, Task<Message>) {
-        info!("Initializing Rusty Browser");
-        
+impl Default for BrowserApp {
+    fn default() -> Self {
         let config = BrowserConfig::default();
         let session = Arc::new(RwLock::new(BrowserSession::new(config)));
         
-        let app = Self {
+        Self {
             session,
             current_url: String::new(),
             is_loading: false,
-            can_go_back: false,
-            can_go_forward: false,
             active_tab_title: None,
-        };
-        
-        // Start the session
-        let session_clone = Arc::clone(&app.session);
-        let init_task = Task::perform(
-            async move {
-                let session = session_clone.read().await;
-                let _ = session.start().await;
-            },
-            |_| Message::NavigateTo("https://start.duckduckgo.com".to_string()),
-        );
-        
-        (app, init_task)
+        }
     }
+}
 
+impl BrowserApp {
     pub fn title(&self) -> String {
         match &self.active_tab_title {
             Some(title) if !title.is_empty() => format!("{} - Rusty Browser", title),
@@ -98,7 +78,6 @@ impl BrowserApp {
                 } else {
                     format!("https://{}", self.current_url)
                 };
-                
                 Task::done(Message::NavigateTo(url))
             }
             
@@ -208,7 +187,7 @@ impl BrowserApp {
                         let session = session.read().await;
                         if let Some(window) = session.window_manager.get_active_window().await {
                             let tab = window.create_tab().await;
-                            tab.id
+                            tab.id.0
                         } else {
                             uuid::Uuid::nil()
                         }
@@ -255,33 +234,13 @@ impl BrowserApp {
                             (None, None)
                         }
                     },
-                    |(url, _title)| {
+                    |(url, title)| {
                         if let Some(u) = url {
                             Message::UrlChanged(u)
                         } else {
                             Message::LoadingFinished
                         }
                     },
-                )
-            }
-            
-            Message::TabTitleChanged(tab_id, title) => {
-                if self.active_tab_title.as_ref() != Some(&title) {
-                    self.active_tab_title = Some(title);
-                }
-                Task::none()
-            }
-            
-            Message::WindowResized(width, height) => {
-                let session = Arc::clone(&self.session);
-                Task::perform(
-                    async move {
-                        let session = session.read().await;
-                        if let Some(window) = session.window_manager.get_active_window().await {
-                            window.set_size(width, height).await;
-                        }
-                    },
-                    |_| Message::LoadingFinished,
                 )
             }
             
@@ -303,55 +262,42 @@ impl BrowserApp {
         }
     }
 
-    pub fn view(&self) -> Element<Message> {
+    pub fn view(&self) -> Element<'_, Message> {
         // Toolbar with navigation buttons
-        let toolbar = Toolbar::new()
-            .on_back(Message::GoBack)
-            .on_forward(Message::GoForward)
-            .on_reload(Message::Reload)
-            .on_stop(Message::StopLoading)
-            .can_go_back(self.can_go_back)
-            .can_go_forward(self.can_go_forward)
-            .is_loading(self.is_loading);
+        let toolbar = row![
+            button("←").on_press(Message::GoBack),
+            button("→").on_press(Message::GoForward),
+            button(if self.is_loading { "✕" } else { "⟳" }).on_press(Message::Reload),
+        ]
+        .spacing(8)
+        .padding(8);
 
         // Address bar
-        let address_bar = AddressBar::new(&self.current_url)
-            .on_change(Message::UrlChanged)
-            .on_submit(Message::NavigateSubmitted);
+        let address_bar = text_input("Enter URL or search...", &self.current_url)
+            .on_input(Message::UrlChanged)
+            .on_submit(Message::NavigateSubmitted)
+            .padding(10);
 
         // Tab bar
-        let tab_bar = TabBar::new()
-            .on_new_tab(Message::NewTab)
-            .on_close_tab(Message::CloseTab)
-            .on_switch_tab(Message::SwitchTab);
+        let tab_bar = row![
+            button("Tab 1"),
+            button("+").on_press(Message::NewTab),
+        ]
+        .spacing(8)
+        .padding(8);
 
         // Content area (placeholder for now)
         let content = container(
-            text("Content Area - Servo WebView will be embedded here")
-                .size(16)
+            text("Content Area - Servo WebView will be embedded here").size(16)
         )
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .center_x()
-        .center_y();
+        .center_x(Length::Fill)
+        .center_y(Length::Fill);
 
         // Main layout
-        column![
-            toolbar.view(),
-            address_bar.view(),
-            tab_bar.view(),
-            content,
-        ]
-        .into()
+        column![toolbar, address_bar, tab_bar, content].into()
     }
 
     pub fn theme(&self) -> Theme {
         Theme::Dark
-    }
-}
-
-impl Default for BrowserApp {
-    fn default() -> Self {
-        Self::new().0
     }
 }

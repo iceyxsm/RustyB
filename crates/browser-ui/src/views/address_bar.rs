@@ -1,7 +1,7 @@
 //! Address bar component
 
 use iced::{
-    widget::{text_input, TextInput},
+    widget::text_input,
     Element, Length,
 };
 
@@ -31,7 +31,7 @@ impl<'a, Message: Clone> AddressBar<'a, Message> {
         self
     }
 
-    pub fn view(&self) -> Element<Message> {
+    pub fn view(&self) -> Element<Message> where Message: 'a {
         let input = text_input("Enter URL or search...", self.url)
             .on_input_maybe(self.on_change)
             .on_submit_maybe(self.on_submit.clone())

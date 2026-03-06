@@ -1,8 +1,8 @@
 //! Navigation toolbar
 
 use iced::{
-    widget::{button, row, Button, Row},
-    Element, Length,
+    widget::{button, row},
+    Element,
 };
 
 /// Navigation toolbar component
@@ -64,21 +64,21 @@ impl<Message: Clone> Toolbar<Message> {
         self
     }
 
-    pub fn view(&self) -> Element<Message> {
+    pub fn view<'a>(&self) -> Element<'a, Message> where Message: 'a {
         let back_button = button("←")
             .on_press_maybe(self.on_back.clone())
             .style(if self.can_go_back {
-                iced::widget::button::primary
+                button::primary
             } else {
-                iced::widget::button::secondary
+                button::secondary
             });
 
         let forward_button = button("→")
             .on_press_maybe(self.on_forward.clone())
             .style(if self.can_go_forward {
-                iced::widget::button::primary
+                button::primary
             } else {
-                iced::widget::button::secondary
+                button::secondary
             });
 
         let reload_button = button(if self.is_loading { "✕" } else { "⟳" })

@@ -1,7 +1,7 @@
 //! Tab bar component
 
 use iced::{
-    widget::{button, row, scrollable, text, Row, Scrollable},
+    widget::{button, row, scrollable, text},
     Element, Length,
 };
 
@@ -36,7 +36,7 @@ impl<Message: Clone> TabBar<Message> {
         self
     }
 
-    pub fn view(&self) -> Element<Message> {
+    pub fn view<'a>(&self) -> Element<'a, Message> where Message: 'a {
         let new_tab_button = button("+").on_press_maybe(self.on_new_tab.clone());
 
         // Placeholder tabs
@@ -55,7 +55,7 @@ impl<Message: Clone> TabBar<Message> {
         .into()
     }
 
-    fn tab_button(&self, id: uuid::Uuid, title: &str, active: bool) -> Element<Message> {
+    fn tab_button<'a>(&self, id: uuid::Uuid, title: &'a str, active: bool) -> Element<'a, Message> where Message: 'a {
         let close_button = button("×")
             .on_press_maybe(self.on_close_tab.map(|f| f(id)))
             .style(iced::widget::button::danger);
@@ -64,15 +64,14 @@ impl<Message: Clone> TabBar<Message> {
             text(title).size(14),
             close_button,
         ]
-        .spacing(8)
-        .align_items(iced::Alignment::Center);
+        .spacing(8);
 
         button(tab_content)
             .on_press_maybe(self.on_switch_tab.map(|f| f(id)))
             .style(if active {
-                iced::widget::button::primary
+                button::primary
             } else {
-                iced::widget::button::secondary
+                button::secondary
             })
             .into()
     }
