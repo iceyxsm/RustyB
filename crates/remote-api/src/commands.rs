@@ -70,6 +70,9 @@ pub enum RemoteCommand {
     /// Reload the page
     Reload,
     
+    /// Stop loading
+    StopLoading,
+    
     /// Set viewport size
     SetViewport { width: u32, height: u32 },
 }

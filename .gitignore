@@ -1,0 +1,103 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+*.rlib
+*.rmeta
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+/dist/
+/build/
+/out/
+
+# Dependencies
+/vendor/
+
+# Test artifacts
+*.profraw
+*.profdata
+
+# Documentation
+/doc/
+/target/doc/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
+Thumbs.db
+.DS_Store
+*.tmp
+
+# Logs
+*.log
+/logs/
+
+# Coverage
+coverage/
+*.lcov
+
+# Servo specific (when we integrate)
+/servo/
+/.servo/
+
+# Model files (AI)
+*.gguf
+*.bin
+*.safetensors
+/models/
+/checkpoints/
+
+# Certificates (generated)
+/certs/
+*.pem
+*.key
+*.crt
+
+# Cache
+/.cache/
+*.cache
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+/sled/
+/redb/
+
+# Temporary files
+/tmp/
+/temp/
+*.tmp
+
+# Node (if we add any JS tooling)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Python (if we add any Python tooling)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Custom
+*.local
+local/
+personal/
