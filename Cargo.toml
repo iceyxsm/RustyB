@@ -96,6 +96,48 @@ async-trait = "0.1"
 # Dev dependencies
 tokio-test = "0.4"
 
+# ============================================
+# Memory-Optimized Build Profiles (Max 10GB)
+# ============================================
+
+[profile.dev]
+# Fast compilation, minimal memory
+opt-level = 0
+debug = true
+codegen-units = 256
+incremental = true
+
+[profile.release]
+# Memory-efficient release build
+opt-level = 2
+debug = false
+codegen-units = 32
+lto = false
+panic = "abort"
+strip = true
+
+# Per-crate memory limits for heavy crates
+[profile.release.package.wgpu]
+codegen-units = 128
+
+[profile.release.package.wgpu-core]
+codegen-units = 128
+
+[profile.release.package.naga]
+codegen-units = 128
+
+[profile.release.package.candle-transformers]
+codegen-units = 128
+
+[profile.release.package.candle-core]
+codegen-units = 128
+
+[profile.release.package.swash]
+codegen-units = 64
+
+[profile.release.package.skrifa]
+codegen-units = 64
+
 # Internal crates
 shared = { path = "crates/shared" }
 browser-core = { path = "crates/browser-core" }
