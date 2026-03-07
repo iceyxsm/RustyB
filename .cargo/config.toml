@@ -1,66 +1,37 @@
 # ============================================
-# Rust Build Configuration - Max 10GB RAM
+# Rust Build Configuration - Cranelift Backend
+# Uses ~50% less memory, builds 30-70% faster
 # ============================================
 
 [build]
-# Limit parallel compilation jobs
-# 2 jobs max to stay under 10GB
+# Limit to 2 parallel jobs for 10GB RAM constraint
 jobs = 2
 
-# Use rust-lld linker (faster, less memory than link.exe)
+# Use rust-lld linker
 rustflags = [
     "-C", "linker=rust-lld.exe",
-    "-C", "link-arg=-fuse-ld=lld",
 ]
 
 # ============================================
-# Release Profile - Memory Optimized
+# Enable Cranelift (MUCH less memory than LLVM)
 # ============================================
+[unstable]
+codegen-backend = true
+
+[profile.dev]
+codegen-backend = "cranelift"
+incremental = true
+
 [profile.release]
-# Reduce optimization effort (saves ~30% memory)
+codegen-backend = "cranelift"
 opt-level = 2
-
-# INCREASE codegen units to split work (key for memory!)
-# More units = smaller chunks = less memory per unit
-codegen-units = 32
-
-# Disable LTO (saves massive memory)
-lto = false
-
-# Strip debug info (saves ~20% memory)
 debug = false
-
-# Don't compress panic messages
+lto = false
 panic = "abort"
+strip = true
 
 # ============================================
-# Per-Crate Settings for Memory-Hungry Crates
-# ============================================
-[profile.release.package.wgpu]
-# Split wgpu into many small units
-codegen-units = 128
-
-[profile.release.package.wgpu-core]
-codegen-units = 128
-
-[profile.release.package.naga]
-codegen-units = 128
-
-[profile.release.package.candle-transformers]
-codegen-units = 128
-
-[profile.release.package.swash]
-codegen-units = 64
-
-[profile.release.package.skrifa]
-codegen-units = 64
-
-# ============================================
-# Windows-Specific: Use LLVM linker
+# Windows Linker
 # ============================================
 [target.x86_64-pc-windows-msvc]
 linker = "rust-lld.exe"
-
-# Alternative: Use mold if installed (even faster)
-# [target.x86_64-pc-windows-msvc]
-# linker = "mold.exe"
