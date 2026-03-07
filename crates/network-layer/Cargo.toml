@@ -23,7 +23,7 @@ rustls = { version = "0.23", features = ["ring"] }
 rustls-pemfile = "2.0"
 rustls-native-certs = "0.8"
 tokio-rustls.workspace = true
-rcgen = { version = "0.14", features = ["pem", "x509-parser"] }
+rcgen = { version = "0.14", features = ["pem", "x509-parser", "ring"] }
 x509-parser = "0.16"
 
 # DNS Resolution - Hickory DNS 2025-2026

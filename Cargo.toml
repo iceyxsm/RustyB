@@ -48,10 +48,10 @@ tower = { version = "0.5", features = ["full"] }
 tower-http = { version = "0.6", features = ["full"] }
 axum = { version = "0.8", features = ["ws", "multipart"] }
 
-# TLS
-rustls = "0.23"
+# TLS - using ring instead of aws-lc for faster builds
+rustls = { version = "0.23", features = ["ring"], default-features = false }
 tokio-rustls = "0.26"
-rcgen = "0.13"
+rcgen = { version = "0.14", features = ["pem", "x509-parser", "ring"] }
 
 # WebSocket
 tokio-tungstenite = "0.26"
