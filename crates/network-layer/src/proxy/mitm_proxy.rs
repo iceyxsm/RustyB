@@ -282,7 +282,7 @@ impl MitmProxy {
         // Read the CONNECT request
         let mut buffer = vec![0u8; 4096];
         let n = client_stream.read(&mut buffer).await?;
-        let request = String::from_utf8_lossy(&buffer[..n]);
+        let request = std::string::String::from_utf8_lossy(&buffer[..n]);
 
         // Parse CONNECT request
         let target = request

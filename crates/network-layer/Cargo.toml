@@ -81,3 +81,4 @@ time = "0.3"
 [dev-dependencies]
 tokio-test.workspace = true
 hyper = { version = "1.5", features = ["full"] }
+tempfile = "3.0"

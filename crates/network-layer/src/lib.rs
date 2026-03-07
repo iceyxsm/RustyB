@@ -22,6 +22,10 @@
 //! }
 //! ```
 
+// Ensure std types are available for async_trait macro expansion
+#[cfg(test)]
+extern crate std;
+
 pub mod dns;
 pub mod filter;
 pub mod interceptor;

@@ -380,7 +380,7 @@ mod tests {
             .header("User-Agent", "Test/1.0")
             .header("X-Forwarded-For", "192.168.1.1")
             .header("Referer", "https://example.com/previous")
-            .body(Body::empty())
+            .body(Body::default())
             .unwrap()
     }
 

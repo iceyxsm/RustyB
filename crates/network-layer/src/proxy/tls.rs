@@ -282,7 +282,7 @@ fn parse_sni_extension(data: &[u8]) -> Option<String> {
 
         // Host name type = 0
         if name_type == 0 && pos + name_len <= data.len() {
-            return String::from_utf8(data[pos..pos + name_len].to_vec()).ok();
+            return std::string::String::from_utf8(data[pos..pos + name_len].to_vec()).ok();
         }
 
         pos += name_len;
@@ -303,9 +303,9 @@ pub fn is_tls_client_hello(data: &[u8]) -> bool {
 pub fn get_negotiated_protocol(stream: &TlsStream<TcpStream>) -> Option<String> {
     match stream {
         TlsStream::Server(s) => s.get_ref().1.alpn_protocol()
-            .map(|p| String::from_utf8_lossy(p).to_string()),
+            .map(|p| std::string::String::from_utf8_lossy(p).to_string()),
         TlsStream::Client(c) => c.get_ref().1.alpn_protocol()
-            .map(|p| String::from_utf8_lossy(p).to_string()),
+            .map(|p| std::string::String::from_utf8_lossy(p).to_string()),
     }
 }
 

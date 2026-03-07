@@ -6,6 +6,7 @@ pub mod privacy;
 use async_trait::async_trait;
 use http::{Request, Response};
 use hyper::body::Incoming;
+use std::boxed::Box;
 use std::sync::Arc;
 use tracing::{debug, info, warn};
 

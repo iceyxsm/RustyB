@@ -186,6 +186,7 @@ impl CertificateAuthority {
 
     /// Parse CA certificate PEM and extract CertificateParams using x509-parser
     fn parse_ca_params_from_pem(cert_pem: &str) -> anyhow::Result<CertificateParams> {
+        use std::vec::Vec;
         use x509_parser::pem::parse_x509_pem;
         use x509_parser::prelude::*;
 
@@ -348,11 +349,11 @@ impl CertificateAuthority {
     }
 
     /// Serialize the CA key to PEM
-    fn serialize_key_pem(&self) -> String {
+    fn serialize_key_pem(&self) -> std::string::String {
         if let Ok(key) = KeyPair::try_from(self.ca_key_bytes.as_ref().clone()) {
             key.serialize_pem()
         } else {
-            String::new()
+            std::string::String::new()
         }
     }
 
