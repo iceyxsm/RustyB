@@ -503,7 +503,7 @@ impl NamedKey {
             IcedKey::F33 => NamedKey::F33,
             IcedKey::F34 => NamedKey::F34,
             IcedKey::F35 => NamedKey::F35,
-            _ => NamedKey::Unidentified,
+            _ => NamedKey::Fn, // Fallback for any unidentified keys
         }
     }
 }
@@ -679,76 +679,76 @@ impl InputEvent {
         use browser_core::webview::*;
 
         match self {
-            InputEvent::MouseMove { x, y, .. } => {
-                Some(InputEvent::MouseMove(MouseMoveEvent {
+            Self::MouseMove { x, y, .. } => {
+                Some(browser_core::webview::InputEvent::MouseMove(MouseMoveEvent {
                     point: Point2D::new(*x as f32, *y as f32),
                 }))
             }
-            InputEvent::MouseDown { button, .. } => {
-                Some(InputEvent::MouseButton(MouseButtonEvent {
+            Self::MouseDown { button, .. } => {
+                Some(browser_core::webview::InputEvent::MouseButton(MouseButtonEvent {
                     button: button.to_core(),
                     action: MouseButtonAction::Down,
                 }))
             }
-            InputEvent::MouseUp { button, .. } => {
-                Some(InputEvent::MouseButton(MouseButtonEvent {
+            Self::MouseUp { button, .. } => {
+                Some(browser_core::webview::InputEvent::MouseButton(MouseButtonEvent {
                     button: button.to_core(),
                     action: MouseButtonAction::Up,
                 }))
             }
-            InputEvent::MouseScroll { delta, .. } => {
-                Some(InputEvent::Wheel(WheelEvent {
+            Self::MouseScroll { delta, .. } => {
+                Some(browser_core::webview::InputEvent::Wheel(WheelEvent {
                     delta: delta.to_core(),
                     mode: WheelMode::DeltaPixel,
                 }))
             }
-            InputEvent::KeyDown { key, modifiers, .. } => {
-                Some(InputEvent::Keyboard(KeyboardEvent {
+            Self::KeyDown { key, modifiers, .. } => {
+                Some(browser_core::webview::InputEvent::Keyboard(KeyboardEvent {
                     key: key.to_core_string(),
                     code: key.to_core_string(),
                     modifiers: modifiers.to_core(),
                     state: KeyState::Down,
                 }))
             }
-            InputEvent::KeyUp { key, modifiers, .. } => {
-                Some(InputEvent::Keyboard(KeyboardEvent {
+            Self::KeyUp { key, modifiers, .. } => {
+                Some(browser_core::webview::InputEvent::Keyboard(KeyboardEvent {
                     key: key.to_core_string(),
                     code: key.to_core_string(),
                     modifiers: modifiers.to_core(),
                     state: KeyState::Up,
                 }))
             }
-            InputEvent::CharacterInput { character } => {
-                Some(InputEvent::Keyboard(KeyboardEvent {
+            Self::CharacterInput { character } => {
+                Some(browser_core::webview::InputEvent::Keyboard(KeyboardEvent {
                     key: character.to_string(),
                     code: character.to_string(),
                     modifiers: Modifiers::default(),
                     state: KeyState::Down,
                 }))
             }
-            InputEvent::TouchStart { id, x, y, .. } => {
-                Some(InputEvent::Touch(TouchEvent {
+            Self::TouchStart { id, x, y, .. } => {
+                Some(browser_core::webview::InputEvent::Touch(TouchEvent {
                     id: TouchId(*id as i32),
                     point: Point2D::new(*x as f32, *y as f32),
                     event_type: TouchEventType::Down,
                 }))
             }
-            InputEvent::TouchMove { id, x, y, .. } => {
-                Some(InputEvent::Touch(TouchEvent {
+            Self::TouchMove { id, x, y, .. } => {
+                Some(browser_core::webview::InputEvent::Touch(TouchEvent {
                     id: TouchId(*id as i32),
                     point: Point2D::new(*x as f32, *y as f32),
                     event_type: TouchEventType::Move,
                 }))
             }
-            InputEvent::TouchEnd { id, x, y, .. } => {
-                Some(InputEvent::Touch(TouchEvent {
+            Self::TouchEnd { id, x, y, .. } => {
+                Some(browser_core::webview::InputEvent::Touch(TouchEvent {
                     id: TouchId(*id as i32),
                     point: Point2D::new(*x as f32, *y as f32),
                     event_type: TouchEventType::Up,
                 }))
             }
-            InputEvent::TouchCancel { id } => {
-                Some(InputEvent::Touch(TouchEvent {
+            Self::TouchCancel { id } => {
+                Some(browser_core::webview::InputEvent::Touch(TouchEvent {
                     id: TouchId(*id as i32),
                     point: Point2D::zero(),
                     event_type: TouchEventType::Cancel,
@@ -1557,16 +1557,21 @@ impl FocusManager {
     pub fn focus_at_point(&mut self, x: f64, y: f64) -> Option<FocusId> {
         // Find the topmost element at this point
         // (iterate in reverse tab order to get the most recently added/focused)
+        let mut found_id = None;
         for id in self.tab_order.iter().rev() {
             if let Some(element) = self.elements.get(id) {
                 if element.enabled && element.visible {
                     let (ex, ey, ew, eh) = element.bounds;
                     if x >= ex && x < ex + ew && y >= ey && y < ey + eh {
-                        self.focus(*id);
-                        return Some(*id);
+                        found_id = Some(*id);
+                        break;
                     }
                 }
             }
+        }
+        if let Some(id) = found_id {
+            self.focus(id);
+            return Some(id);
         }
         None
     }
@@ -1641,7 +1646,7 @@ impl Default for FocusManager {
 #[derive(Debug)]
 pub struct InputManager {
     /// Event batcher for frame-based processing
-    batcher: InputBatcher,
+    batcher: Mutex<InputBatcher>,
     /// Current input state
     state: Arc<RwLock<InputState>>,
     /// Gesture recognizer
@@ -1660,7 +1665,7 @@ impl InputManager {
     /// Create a new input manager
     pub fn new() -> Self {
         Self {
-            batcher: InputBatcher::new(MAX_EVENTS_PER_FRAME),
+            batcher: Mutex::new(InputBatcher::new(MAX_EVENTS_PER_FRAME)),
             state: Arc::new(RwLock::new(InputState::new())),
             gesture_recognizer: Arc::new(Mutex::new(GestureRecognizer::new())),
             focus_manager: Arc::new(RwLock::new(FocusManager::new())),
@@ -1709,7 +1714,7 @@ impl InputManager {
         }
 
         // Add to batcher
-        self.batcher.push(event.to_gpu_event());
+        self.batcher.lock().push(event.to_gpu_event());
     }
 
     /// Queue an event for later processing (thread-safe)
@@ -1733,8 +1738,9 @@ impl InputManager {
     }
 
     /// Get batched events for the current frame
-    pub fn drain_batched_events(&mut self) -> Vec<GpuInputEvent> {
-        self.batcher.drain()
+    pub fn drain_batched_events(&self) -> Vec<GpuInputEvent> {
+        let mut batcher = self.batcher.lock();
+        batcher.drain()
     }
 
     /// Get the current input state
@@ -1800,7 +1806,8 @@ impl InputManager {
 
     /// Clear all input state
     pub fn clear(&mut self) {
-        self.batcher.clear();
+        let mut batcher = self.batcher.lock();
+        batcher.clear();
         {
             let mut state = self.state.write();
             state.clear();
@@ -1886,6 +1893,9 @@ impl ToGpuEvent for InputEvent {
             }
             InputEvent::TouchEnd { id, x, y } => {
                 GpuInputEvent::TouchEnd { id: *id, x: *x, y: *y }
+            }
+            InputEvent::TouchCancel { id } => {
+                GpuInputEvent::TouchCancel { id: *id }
             }
             InputEvent::Resize { width, height } => {
                 GpuInputEvent::Resize { width: *width, height: *height }
@@ -2010,17 +2020,22 @@ pub fn from_iced_mouse_event(
 /// Convert Iced keyboard event to InputEvent
 pub fn from_iced_keyboard_event(event: iced::keyboard::Event) -> Option<InputEvent> {
     match event {
-        iced::keyboard::Event::KeyPressed { key, modifiers, .. } => Some(InputEvent::KeyDown {
-            key: Key::from_iced(&key),
-            modifiers: Modifiers::from_iced(modifiers),
-            repeat: false,
-        }),
+        iced::keyboard::Event::KeyPressed { key, modifiers, text, .. } => {
+            // If there's text input, generate a CharacterInput event
+            if let Some(c) = text.as_ref().and_then(|t| t.chars().next()).filter(|c| !c.is_control()) {
+                return Some(InputEvent::CharacterInput { character: c });
+            }
+            Some(InputEvent::KeyDown {
+                key: Key::from_iced(&key),
+                modifiers: Modifiers::from_iced(modifiers),
+                repeat: false,
+            })
+        }
         iced::keyboard::Event::KeyReleased { key, modifiers, .. } => Some(InputEvent::KeyUp {
             key: Key::from_iced(&key),
             modifiers: Modifiers::from_iced(modifiers),
         }),
-        iced::keyboard::Event::CharacterReceived(c) => Some(InputEvent::CharacterInput { character: c }),
-        iced::keyboard::Event::ModifiersChanged(modifiers) => {
+        iced::keyboard::Event::ModifiersChanged(_) => {
             // This event only changes modifiers, we don't create a separate event
             None
         }

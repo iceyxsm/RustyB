@@ -284,6 +284,8 @@ pub enum InputEvent {
     TouchMove { id: u64, x: f64, y: f64 },
     /// Touch end
     TouchEnd { id: u64, x: f64, y: f64 },
+    /// Touch cancel
+    TouchCancel { id: u64 },
     /// Window resize
     Resize { width: u32, height: u32 },
     /// Focus change

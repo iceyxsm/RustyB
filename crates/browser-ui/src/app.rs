@@ -221,9 +221,9 @@ impl BrowserApp {
                     async move {
                         let session = session.read().await;
                         if let Some(window) = session.window_manager.get_active_window().await {
-                            window.tab_manager.close_tab(shared::TabId(tab_id)).await
+                            window.tab_manager.close_tab(browser_core::TabId(tab_id)).await
                         } else {
-                            None
+                            false
                         }
                     },
                     |_| Message::LoadingFinished,
@@ -236,10 +236,10 @@ impl BrowserApp {
                     async move {
                         let session = session.read().await;
                         if let Some(window) = session.window_manager.get_active_window().await {
-                            window.tab_manager.set_active_tab(shared::TabId(tab_id)).await;
+                            window.tab_manager.set_active_tab(browser_core::TabId(tab_id)).await;
                             if let Some(tab) = window.tab_manager.get_active_tab().await {
                                 let state = tab.get_state().await;
-                                (state.url, state.title)
+                                (Some(state.url), Some(state.title))
                             } else {
                                 (None, None)
                             }
@@ -247,7 +247,7 @@ impl BrowserApp {
                             (None, None)
                         }
                     },
-                    |(url, title)| {
+                    |(url, _title)| {
                         if let Some(u) = url {
                             Message::UrlChanged(u)
                         } else {

@@ -1,99 +1,205 @@
-//! Browser session management
+//! Browser session management - Stub implementation
 
-use crate::window::{Window, WindowManager};
+use crate::webview::WebView;
 use shared::BrowserConfig;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use uuid::Uuid;
 
-/// Represents a browser session
+/// Browser session managing windows and tabs
 #[derive(Debug)]
 pub struct BrowserSession {
-    pub config: Arc<RwLock<BrowserConfig>>,
+    pub config: BrowserConfig,
     pub window_manager: WindowManager,
-    pub is_running: Arc<RwLock<bool>>,
 }
 
 impl BrowserSession {
+    /// Create a new browser session
     pub fn new(config: BrowserConfig) -> Self {
         Self {
-            config: Arc::new(RwLock::new(config)),
+            config,
             window_manager: WindowManager::new(),
-            is_running: Arc::new(RwLock::new(false)),
         }
-    }
-
-    pub async fn start(&self) -> anyhow::Result<Window> {
-        let mut is_running = self.is_running.write().await;
-        *is_running = true;
-        
-        // Create initial window
-        let window = self.window_manager.create_window(false).await;
-        
-        // Navigate to homepage
-        let config = self.config.read().await;
-        let homepage = config.homepage.clone();
-        drop(config);
-        
-        if let Some(tab) = window.tab_manager.get_active_tab().await {
-            tab.navigate(&homepage).await?;
-        }
-        
-        Ok(window)
-    }
-
-    pub async fn stop(&self) {
-        let mut is_running = self.is_running.write().await;
-        *is_running = false;
-        
-        // Save session state
-        // TODO: Implement session persistence
-    }
-
-    pub async fn is_running(&self) -> bool {
-        *self.is_running.read().await
-    }
-
-    pub async fn update_config(&self, config: BrowserConfig) {
-        let mut c = self.config.write().await;
-        *c = config;
-    }
-
-    pub async fn get_config(&self) -> BrowserConfig {
-        self.config.read().await.clone()
     }
 }
 
-/// Session persistence
+/// Window manager
 #[derive(Debug)]
-pub struct SessionStorage {
-    data_dir: std::path::PathBuf,
+pub struct WindowManager {
+    windows: RwLock<Vec<Arc<BrowserWindow>>>,
 }
 
-impl SessionStorage {
-    pub fn new(data_dir: std::path::PathBuf) -> Self {
-        Self { data_dir }
+impl WindowManager {
+    /// Create a new window manager
+    pub fn new() -> Self {
+        Self {
+            windows: RwLock::new(vec![Arc::new(BrowserWindow::new())]),
+        }
     }
 
-    pub async fn save_session(&self, session: &BrowserSession) -> anyhow::Result<()> {
-        let config = session.get_config().await;
-        let config_path = self.data_dir.join("config.json");
-        
-        let config_json = serde_json::to_string_pretty(&config)?;
-        tokio::fs::write(config_path, config_json).await?;
-        
-        Ok(())
+    /// Get the active window
+    pub async fn get_active_window(&self) -> Option<Arc<BrowserWindow>> {
+        self.windows.read().await.first().cloned()
+    }
+}
+
+impl Default for WindowManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Browser window
+#[derive(Debug)]
+pub struct BrowserWindow {
+    pub tab_manager: TabManager,
+}
+
+impl BrowserWindow {
+    /// Create a new browser window
+    pub fn new() -> Self {
+        Self {
+            tab_manager: TabManager::new(),
+        }
     }
 
-    pub async fn load_session(&self) -> anyhow::Result<BrowserSession> {
-        let config_path = self.data_dir.join("config.json");
-        
-        let config = if config_path.exists() {
-            let config_json = tokio::fs::read_to_string(config_path).await?;
-            serde_json::from_str(&config_json)?
-        } else {
-            BrowserConfig::default()
-        };
-        
-        Ok(BrowserSession::new(config))
+    /// Create a new tab
+    pub async fn create_tab(&self) -> Arc<BrowserTab> {
+        self.tab_manager.create_tab().await
+    }
+}
+
+impl Default for BrowserWindow {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Tab manager
+#[derive(Debug)]
+pub struct TabManager {
+    tabs: RwLock<Vec<Arc<BrowserTab>>>,
+}
+
+impl TabManager {
+    /// Create a new tab manager
+    pub fn new() -> Self {
+        let tab = Arc::new(BrowserTab::new());
+        Self {
+            tabs: RwLock::new(vec![tab]),
+        }
+    }
+
+    /// Create a new tab
+    pub async fn create_tab(&self) -> Arc<BrowserTab> {
+        let tab = Arc::new(BrowserTab::new());
+        self.tabs.write().await.push(tab.clone());
+        tab
+    }
+
+    /// Get the active tab (first tab for now)
+    pub async fn get_active_tab(&self) -> Option<Arc<BrowserTab>> {
+        self.tabs.read().await.first().cloned()
+    }
+
+    /// Set the active tab by ID (stub - just validates the tab exists)
+    pub async fn set_active_tab(&self, id: TabId) -> bool {
+        let tabs = self.tabs.read().await;
+        tabs.iter().any(|t| t.id == id)
+    }
+
+    /// Close a tab
+    pub async fn close_tab(&self, id: TabId) -> bool {
+        let mut tabs = self.tabs.write().await;
+        if tabs.len() <= 1 {
+            return false; // Don't close the last tab
+        }
+        tabs.retain(|t| t.id != id);
+        true
+    }
+}
+
+impl Default for TabManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Tab ID
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TabId(pub Uuid);
+
+impl Default for TabId {
+    fn default() -> Self {
+        Self(Uuid::new_v4())
+    }
+}
+
+impl From<shared::TabId> for TabId {
+    fn from(id: shared::TabId) -> Self {
+        Self(id.0)
+    }
+}
+
+/// Tab state
+#[derive(Debug, Clone)]
+pub struct TabState {
+    pub url: String,
+    pub title: String,
+}
+
+/// Browser tab
+#[derive(Debug)]
+pub struct BrowserTab {
+    pub id: TabId,
+    url: RwLock<String>,
+    title: RwLock<String>,
+}
+
+impl BrowserTab {
+    /// Create a new browser tab
+    pub fn new() -> Self {
+        Self {
+            id: TabId::default(),
+            url: RwLock::new("about:blank".to_string()),
+            title: RwLock::new("New Tab".to_string()),
+        }
+    }
+
+    /// Navigate to a URL
+    pub async fn navigate(&self, url: &str) -> Option<String> {
+        *self.url.write().await = url.to_string();
+        Some(url.to_string())
+    }
+
+    /// Reload the tab
+    pub async fn reload(&self) -> Option<String> {
+        Some(self.url.read().await.clone())
+    }
+
+    /// Go back
+    pub async fn go_back(&self) -> Option<String> {
+        // Stub
+        None
+    }
+
+    /// Go forward
+    pub async fn go_forward(&self) -> Option<String> {
+        // Stub
+        None
+    }
+
+    /// Get tab state
+    pub async fn get_state(&self) -> TabState {
+        TabState {
+            url: self.url.read().await.clone(),
+            title: self.title.read().await.clone(),
+        }
+    }
+}
+
+impl Default for BrowserTab {
+    fn default() -> Self {
+        Self::new()
     }
 }

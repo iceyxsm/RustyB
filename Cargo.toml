@@ -81,7 +81,7 @@ tokenizers = "0.21"
 
 # UI (Iced)
 iced = { version = "0.14", features = ["wgpu", "tokio", "debug", "advanced", "image"] }
-iced_aw = { version = "0.12", features = ["tabs", "menu"] }
+iced_aw = { version = "0.13", features = ["tabs", "menu"] }
 
 # Window handling
 raw-window-handle = "0.6"
@@ -92,6 +92,13 @@ redb = "2"
 
 # Async traits
 async-trait = "0.1"
+
+# Servo Web Engine (2026 latest)
+# Pinned to specific revision for stability
+libservo = { git = "https://github.com/servo/servo.git", rev = "7e71f2f", package = "libservo" }
+surfman = { version = "0.9", features = ["sm-raw-window-handle"] }
+webrender = { git = "https://github.com/servo/webrender.git", rev = "9d28ad6" }
+webrender_api = { git = "https://github.com/servo/webrender.git", rev = "9d28ad6" }
 
 # Dev dependencies
 tokio-test = "0.4"

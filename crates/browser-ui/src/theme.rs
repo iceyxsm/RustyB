@@ -673,15 +673,8 @@ pub mod persistence {
 
     /// Get the config directory path
     fn config_dir() -> Option<PathBuf> {
-        // Use dirs crate if available, otherwise fallback to local directory
-        #[cfg(feature = "dirs")]
-        {
-            dirs::config_dir().map(|dir| dir.join("rusty-browser"))
-        }
-        #[cfg(not(feature = "dirs"))]
-        {
-            std::env::current_dir().ok().map(|dir| dir.join(".config").join("rusty-browser"))
-        }
+        // Use dirs crate to get config directory
+        dirs::config_dir().map(|dir| dir.join("rusty-browser"))
     }
 
     /// Get the full config file path
@@ -789,7 +782,8 @@ pub mod system_detection {
         /// and sends updates through the returned receiver.
         pub fn new() -> (Self, watch::Receiver<ThemeMode>) {
             let (tx, rx) = watch::channel(ThemeMode::detect_system());
-            let rx_clone = rx.clone();
+            let rx_monitor = rx.clone();
+            let rx_return = rx.clone();
 
             let handle = tokio::spawn(async move {
                 let mut interval = tokio::time::interval(std::time::Duration::from_secs(5));
@@ -798,7 +792,7 @@ pub mod system_detection {
                     interval.tick().await;
                     
                     let current = ThemeMode::detect_system();
-                    if current != *rx.borrow() {
+                    if current != *rx_monitor.borrow() {
                         debug!("System theme changed to: {:?}", current);
                         if let Err(e) = tx.send(current) {
                             error!("Failed to send theme update: {}", e);
@@ -810,10 +804,10 @@ pub mod system_detection {
 
             (
                 Self {
-                    rx: rx_clone,
+                    rx,
                     _handle: Arc::new(handle),
                 },
-                rx,
+                rx_return,
             )
         }
     }
