@@ -414,5 +414,3 @@ MIT OR Apache-2.0
 This is a research/educational project. Not intended for production use as a daily driver. Use at your own risk.
 
 ---
-
-Built with 🦀 in Rust, 2026
