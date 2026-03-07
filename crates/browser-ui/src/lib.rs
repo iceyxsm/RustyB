@@ -6,15 +6,35 @@
 //! - Servo WebView rendering with GPU texture sharing
 //! - Input event handling (mouse, keyboard, touch)
 //! - Navigation controls and address bar
+//! - Comprehensive theme system with dark/light/high-contrast modes
 
 pub mod app;
 pub mod event_loop_waker;
+pub mod gpu_renderer;
+pub mod input_system;
 pub mod integrated_app;
+pub mod servo_integration;
 pub mod servo_renderer;
+pub mod theme;
 pub mod webview_widget;
 
 // Re-export main types for convenience
 pub use app::{BrowserApp, Message as AppMessage};
+pub use gpu_renderer::{GpuRenderer, RenderMode, InputEvent as GpuInputEvent, InputBatcher, FpsProfiler, GpuFrame};
+pub use input_system::{
+    InputManager, InputState, InputEvent, GestureRecognizer, Gesture,
+    FocusManager, FocusId, FocusableElement,
+    MouseButton, Key, NamedKey, Modifiers, ScrollDelta,
+    AccessibilitySupport, AccessibilityAnnouncement,
+    from_iced_mouse_event, from_iced_keyboard_event,
+};
 pub use integrated_app::{IntegratedBrowserApp, Message as IntegratedMessage};
+pub use servo_integration::{
+    ServoWebView, ServoConfig, ServoWebViewBuilder, ServoWebViewEvent,
+    TouchPhase, CursorType, ServoIntegrationError,
+    platform, cpu_fallback, renderer_integration, input,
+    to_servo_mouse_button,
+};
+pub use browser_core::webview::MouseButton as ServoMouseButton;
 pub use servo_renderer::ServoRenderer;
 pub use webview_widget::{WebViewWidget, WebViewMessage};

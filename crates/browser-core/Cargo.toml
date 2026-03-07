@@ -39,5 +39,9 @@ dashmap.workspace = true
 parking_lot.workspace = true
 raw-window-handle.workspace = true
 
+# Storage
+redb.workspace = true
+
 [dev-dependencies]
 tokio-test.workspace = true
+tempfile = "3"

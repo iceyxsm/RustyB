@@ -22,6 +22,16 @@ remote-api.workspace = true
 iced.workspace = true
 iced_aw.workspace = true
 
+# GPU Rendering
+wgpu = { version = "23", features = ["vulkan-portability", "metal"] }
+crossbeam-channel = "0.5"
+pollster = "0.4"
+
+# Servo Integration
+# Note: These are the 2026 Servo embedding dependencies
+# In production, use specific revisions from Servo's main branch
+surfman = { version = "0.9", optional = true }
+
 # Async
 tokio.workspace = true
 
@@ -31,6 +41,7 @@ serde_json.workspace = true
 
 # Error handling
 anyhow.workspace = true
+thiserror.workspace = true
 
 # Logging
 tracing.workspace = true
@@ -41,9 +52,23 @@ uuid.workspace = true
 chrono.workspace = true
 raw-window-handle.workspace = true
 parking_lot.workspace = true
+dirs.workspace = true
 
 # HTTP
 reqwest.workspace = true
+
+# Platform-specific dependencies
+[target.'cfg(target_os = "macos")'.dependencies]
+# metal = { version = "0.29", optional = true }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+# windows = { version = "0.58", features = ["Win32_Graphics_Direct3D11", "Win32_Graphics_Dxgi"], optional = true }
+
+[features]
+default = ["servo-integration"]
+servo-integration = ["surfman"]
+metal-support = []  # "metal"
+dx11-support = []   # "windows"
 
 [dev-dependencies]
 tokio-test.workspace = true

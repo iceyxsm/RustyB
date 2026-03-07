@@ -1,12 +1,5 @@
-//! Core browser functionality
+//! Core browser functionality - Simplified stub
 
-pub mod navigation;
-pub mod session;
-pub mod tab;
 pub mod webview;
-pub mod window;
 
-pub use navigation::*;
-pub use session::*;
-pub use tab::*;
-pub use window::*;
+pub use webview::*;

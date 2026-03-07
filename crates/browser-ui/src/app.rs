@@ -8,7 +8,9 @@ use iced::{
 use shared::BrowserConfig;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
+
+use crate::theme::{BrowserTheme, ThemeMode};
 
 /// Main browser application state
 #[derive(Debug)]
@@ -17,6 +19,8 @@ pub struct BrowserApp {
     current_url: String,
     is_loading: bool,
     active_tab_title: Option<String>,
+    /// The current browser theme
+    theme: BrowserTheme,
 }
 
 /// Messages for the application
@@ -40,6 +44,10 @@ pub enum Message {
     LoadingStarted,
     LoadingFinished,
     LoadingFailed(String),
+    
+    // Theme
+    ThemeChanged(ThemeMode),
+    ToggleTheme,
 }
 
 impl Default for BrowserApp {
@@ -47,11 +55,16 @@ impl Default for BrowserApp {
         let config = BrowserConfig::default();
         let session = Arc::new(RwLock::new(BrowserSession::new(config)));
         
+        // Load saved theme or use default
+        let theme = crate::theme::persistence::load_or_default();
+        info!("BrowserApp initialized with theme: {:?}", theme.mode());
+        
         Self {
             session,
             current_url: String::new(),
             is_loading: false,
             active_tab_title: None,
+            theme,
         }
     }
 }
@@ -259,37 +272,92 @@ impl BrowserApp {
                 self.is_loading = false;
                 Task::none()
             }
+            
+            Message::ThemeChanged(mode) => {
+                info!("Theme changed to: {:?}", mode);
+                self.theme = self.theme.with_mode(mode);
+                
+                // Persist the theme preference
+                if let Err(e) = crate::theme::persistence::save_theme(&self.theme) {
+                    warn!("Failed to save theme: {}", e);
+                }
+                
+                Task::none()
+            }
+            
+            Message::ToggleTheme => {
+                self.theme = self.theme.toggle();
+                info!("Theme toggled to: {:?}", self.theme.mode());
+                
+                // Persist the theme preference
+                if let Err(e) = crate::theme::persistence::save_theme(&self.theme) {
+                    warn!("Failed to save theme: {}", e);
+                }
+                
+                Task::none()
+            }
         }
     }
 
     pub fn view(&self) -> Element<'_, Message> {
+        use crate::theme::{container_background, text_color, ContainerStyle, TextStyle};
+        
         // Toolbar with navigation buttons
-        let toolbar = row![
-            button("←").on_press(Message::GoBack),
-            button("→").on_press(Message::GoForward),
-            button(if self.is_loading { "✕" } else { "⟳" }).on_press(Message::Reload),
-        ]
-        .spacing(8)
-        .padding(8);
+        let toolbar = container(
+            row![
+                button("←").on_press(Message::GoBack),
+                button("→").on_press(Message::GoForward),
+                button(if self.is_loading { "✕" } else { "⟳" }).on_press(Message::Reload),
+                button("🌙").on_press(Message::ToggleTheme),
+            ]
+            .spacing(8)
+        )
+        .style(move |_| container::Style {
+            background: Some(container_background(&self.theme, ContainerStyle::Toolbar).into()),
+            ..Default::default()
+        })
+        .padding(8)
+        .width(Length::Fill);
 
         // Address bar
-        let address_bar = text_input("Enter URL or search...", &self.current_url)
-            .on_input(Message::UrlChanged)
-            .on_submit(Message::NavigateSubmitted)
-            .padding(10);
+        let address_bar = container(
+            text_input("Enter URL or search...", &self.current_url)
+                .on_input(Message::UrlChanged)
+                .on_submit(Message::NavigateSubmitted)
+                .padding(10)
+        )
+        .style(move |_| container::Style {
+            background: Some(container_background(&self.theme, ContainerStyle::AddressBar).into()),
+            ..Default::default()
+        })
+        .padding(8)
+        .width(Length::Fill);
 
         // Tab bar
-        let tab_bar = row![
-            button("Tab 1"),
-            button("+").on_press(Message::NewTab),
-        ]
-        .spacing(8)
-        .padding(8);
+        let tab_bar = container(
+            row![
+                button("Tab 1"),
+                button("+").on_press(Message::NewTab),
+            ]
+            .spacing(8)
+        )
+        .style(move |_| container::Style {
+            background: Some(container_background(&self.theme, ContainerStyle::TabBar).into()),
+            ..Default::default()
+        })
+        .padding(8)
+        .width(Length::Fill);
 
         // Content area (placeholder for now)
         let content = container(
-            text("Content Area - Servo WebView will be embedded here").size(16)
+            text("Content Area - Servo WebView will be embedded here")
+                .size(16)
+                .color(text_color(&self.theme, TextStyle::Primary))
         )
+        .style(move |_| container::Style {
+            background: Some(container_background(&self.theme, ContainerStyle::Content).into()),
+            ..Default::default()
+        })
         .center_x(Length::Fill)
         .center_y(Length::Fill);
 
@@ -297,7 +365,18 @@ impl BrowserApp {
         column![toolbar, address_bar, tab_bar, content].into()
     }
 
+    /// Get the current theme for Iced
     pub fn theme(&self) -> Theme {
-        Theme::Dark
+        self.theme.effective_theme().clone()
+    }
+    
+    /// Get a reference to the browser theme
+    pub fn browser_theme(&self) -> &BrowserTheme {
+        &self.theme
+    }
+    
+    /// Set the theme mode
+    pub fn set_theme_mode(&mut self, mode: ThemeMode) {
+        self.theme = self.theme.with_mode(mode);
     }
 }

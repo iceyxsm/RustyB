@@ -1,7 +1,8 @@
 //! Address bar component
 
+use crate::theme::{container_background, text_color, ContainerStyle, TextStyle, BrowserTheme};
 use iced::{
-    widget::text_input,
+    widget::{container, text_input},
     Element, Length,
 };
 
@@ -10,6 +11,7 @@ pub struct AddressBar<'a, Message> {
     url: &'a str,
     on_change: Option<fn(String) -> Message>,
     on_submit: Option<Message>,
+    theme: BrowserTheme,
 }
 
 impl<'a, Message: Clone> AddressBar<'a, Message> {
@@ -18,7 +20,14 @@ impl<'a, Message: Clone> AddressBar<'a, Message> {
             url,
             on_change: None,
             on_submit: None,
+            theme: BrowserTheme::default(),
         }
+    }
+    
+    /// Set the theme for the address bar
+    pub fn theme(mut self, theme: BrowserTheme) -> Self {
+        self.theme = theme;
+        self
     }
 
     pub fn on_change(mut self, f: fn(String) -> Message) -> Self {
@@ -32,6 +41,8 @@ impl<'a, Message: Clone> AddressBar<'a, Message> {
     }
 
     pub fn view(&self) -> Element<Message> where Message: 'a {
+        let theme = &self.theme;
+        
         let input = text_input("Enter URL or search...", self.url)
             .on_input_maybe(self.on_change)
             .on_submit_maybe(self.on_submit.clone())
@@ -39,6 +50,12 @@ impl<'a, Message: Clone> AddressBar<'a, Message> {
             .size(16)
             .width(Length::Fill);
 
-        input.into()
+        container(input)
+            .style(move |_| container::Style {
+                background: Some(container_background(theme, ContainerStyle::AddressBar).into()),
+                ..Default::default()
+            })
+            .width(Length::Fill)
+            .into()
     }
 }
