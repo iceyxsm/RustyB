@@ -96,6 +96,14 @@ async-trait = "0.1"
 # Dev dependencies
 tokio-test = "0.4"
 
+# Internal crates (path dependencies)
+shared = { path = "crates/shared" }
+browser-core = { path = "crates/browser-core" }
+network-layer = { path = "crates/network-layer" }
+web-to-api = { path = "crates/web-to-api" }
+ai-engine = { path = "crates/ai-engine" }
+remote-api = { path = "crates/remote-api" }
+
 # ============================================
 # Memory-Optimized Build Profiles (Max 10GB)
 # ============================================
@@ -109,9 +117,9 @@ incremental = true
 
 [profile.release]
 # Memory-efficient release build
-opt-level = 2
+opt-level = 1
 debug = false
-codegen-units = 32
+codegen-units = 256
 lto = false
 panic = "abort"
 strip = true
@@ -137,11 +145,3 @@ codegen-units = 64
 
 [profile.release.package.skrifa]
 codegen-units = 64
-
-# Internal crates
-shared = { path = "crates/shared" }
-browser-core = { path = "crates/browser-core" }
-network-layer = { path = "crates/network-layer" }
-web-to-api = { path = "crates/web-to-api" }
-ai-engine = { path = "crates/ai-engine" }
-remote-api = { path = "crates/remote-api" }

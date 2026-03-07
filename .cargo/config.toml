@@ -4,8 +4,8 @@
 
 [build]
 # Limit parallel compilation jobs
-# 4 jobs max to stay under 10GB (each can use ~2GB)
-jobs = 4
+# 2 jobs max to stay under 10GB
+jobs = 2
 
 # Use rust-lld linker (faster, less memory than link.exe)
 rustflags = [
