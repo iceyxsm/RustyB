@@ -75,6 +75,9 @@ ipnet = "2.9"
 addr = "0.15"
 once_cell.workspace = true
 
+# Time handling for certificate validity
+time = "0.3"
+
 [dev-dependencies]
 tokio-test.workspace = true
 hyper = { version = "1.5", features = ["full"] }
