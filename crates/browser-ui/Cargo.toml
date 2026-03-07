@@ -27,11 +27,12 @@ wgpu = { version = "23", features = ["vulkan-portability", "metal"] }
 crossbeam-channel = "0.5"
 pollster = "0.4"
 
-# Servo Integration - 2026 latest
-libservo = { workspace = true, optional = true }
-surfman = { workspace = true, optional = true }
-webrender = { workspace = true, optional = true }
-webrender_api = { workspace = true, optional = true }
+# WebView Integration (WRY - Production Grade)
+wry = { workspace = true }
+tao = { workspace = true }
+
+# Servo/Surfman (for GL context management)
+surfman = { version = "0.9", optional = true }
 
 # Async
 tokio.workspace = true
@@ -66,8 +67,7 @@ reqwest.workspace = true
 # windows = { version = "0.58", features = ["Win32_Graphics_Direct3D11", "Win32_Graphics_Dxgi"], optional = true }
 
 [features]
-default = ["servo-integration", "system-theme-detection"]
-servo-integration = ["libservo", "surfman", "webrender", "webrender_api"]
+default = ["system-theme-detection", "surfman"]
 metal-support = []  # "metal"
 dx11-support = []   # "windows"
 system-theme-detection = []

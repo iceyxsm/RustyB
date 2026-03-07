@@ -12,10 +12,10 @@ resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
-edition = "2024"
-authors = ["Your Name <you@example.com>"]
+edition = "2021"
+authors = ["Shiv <shivmunot9@gmail.com>"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/yourusername/rusty-browser"
+repository = "https://github.com/iceyxsm/rusty-browser"
 rust-version = "1.85"
 
 [workspace.dependencies]
@@ -93,12 +93,9 @@ redb = "2"
 # Async traits
 async-trait = "0.1"
 
-# Servo Web Engine (2026 latest)
-# Pinned to specific revision for stability
-libservo = { git = "https://github.com/servo/servo.git", rev = "7e71f2f", package = "libservo" }
-surfman = { version = "0.9", features = ["sm-raw-window-handle"] }
-webrender = { git = "https://github.com/servo/webrender.git", rev = "9d28ad6" }
-webrender_api = { git = "https://github.com/servo/webrender.git", rev = "9d28ad6" }
+# WebView (WRY - Cross-platform WebView)
+wry = { version = "0.50", features = ["devtools"] }
+tao = "0.32"
 
 # Dev dependencies
 tokio-test = "0.4"

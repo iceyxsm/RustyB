@@ -1,9 +1,9 @@
-//! Rusty Browser UI - Iced-based user interface with Servo integration
+//! Rusty Browser UI - Iced-based user interface with WebView integration
 //!
 //! This crate provides the user interface for the Rusty Browser,
 //! including:
 //! - Main application window using Iced 0.14
-//! - Servo WebView rendering with GPU texture sharing
+//! - WRY WebView rendering (Edge WebView2 on Windows, WebKit on macOS)
 //! - Input event handling (mouse, keyboard, touch)
 //! - Navigation controls and address bar
 //! - Comprehensive theme system with dark/light/high-contrast modes
@@ -17,6 +17,7 @@ pub mod servo_integration;
 pub mod servo_renderer;
 pub mod theme;
 pub mod webview_widget;
+pub mod webview_wry;
 
 // Re-export main types for convenience
 pub use app::{BrowserApp, Message as AppMessage};
