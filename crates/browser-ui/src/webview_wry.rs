@@ -125,8 +125,16 @@ fn run_wry_thread(
     };
     use wry::WebViewBuilder;
     
+    #[cfg(target_os = "windows")]
+    use tao::platform::windows::EventLoopBuilderExtWindows;
+    
     info!("Starting WRY WebView thread...");
     
+    // On Windows, allow event loop on any thread
+    #[cfg(target_os = "windows")]
+    let event_loop = EventLoopBuilder::new().with_any_thread(true).build();
+    
+    #[cfg(not(target_os = "windows"))]
     let event_loop = EventLoopBuilder::new().build();
     let window = WindowBuilder::new()
         .with_title("Rusty Browser - WebView")
