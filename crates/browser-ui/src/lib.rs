@@ -17,7 +17,7 @@ pub mod servo_integration;
 pub mod servo_renderer;
 pub mod theme;
 pub mod webview_widget;
-pub mod webview_wry;
+pub mod webview_ipc;
 
 // Re-export main types for convenience
 pub use app::{BrowserApp, Message as AppMessage};
@@ -39,3 +39,4 @@ pub use servo_integration::{
 pub use browser_core::webview::MouseButton as ServoMouseButton;
 pub use servo_renderer::ServoRenderer;
 pub use webview_widget::{WebViewWidget, WebViewMessage};
+pub use webview_ipc::{WebViewController, WebViewCommand, WebViewEvent, WebViewState};

@@ -27,10 +27,6 @@ wgpu = { version = "23", features = ["vulkan-portability", "metal"] }
 crossbeam-channel = "0.5"
 pollster = "0.4"
 
-# WebView Integration (WRY - Production Grade)
-wry = { workspace = true }
-tao = { workspace = true }
-
 # Servo/Surfman (for GL context management)
 surfman = { version = "0.9", optional = true }
 

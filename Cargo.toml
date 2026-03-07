@@ -7,6 +7,7 @@ members = [
     "crates/ai-engine",
     "crates/remote-api",
     "crates/shared",
+    "crates/webview-subprocess",
 ]
 resolver = "2"
 
@@ -93,9 +94,9 @@ redb = "2"
 # Async traits
 async-trait = "0.1"
 
-# WebView (WRY - Cross-platform WebView)
-wry = { version = "0.50", features = ["devtools"] }
-tao = "0.32"
+# WebView for Iced (iced_webview_v2 with CEF backend - full browser support)
+# NOTE: First build downloads ~300MB CEF binaries and takes 10-20 minutes
+iced_webview_v2 = { version = "0.1", features = ["cef"] }
 
 # Dev dependencies
 tokio-test = "0.4"

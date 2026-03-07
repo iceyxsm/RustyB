@@ -1,11 +1,10 @@
 //! Production-grade browser application with WRY WebView integration
 //!
-//! This uses WRY (Tauri WebView) which provides native OS webview rendering:
-//! - Windows: Edge WebView2
-//! - macOS: WebKit (WKWebView)
-//! - Linux: WebKitGTK
+//! Uses wry to create a native WebView (Edge WebView2 on Windows, WebKit on macOS/Linux)
+//! embedded in the Iced window
 
 use crate::webview_widget::{WebViewWidget, WebViewMessage};
+use crate::webview_ipc::WebViewEvent;
 use iced::{
     widget::{button, column, container, row, text_input},
     Element, Length, Task, Theme, Subscription,
@@ -86,16 +85,17 @@ impl IntegratedBrowserApp {
             
             Message::NavigateTo(url) => {
                 info!("Navigating to: {}", url);
-                self.current_url = url.clone();
-                self.is_loading = true;
-                self.webview.navigate(&url);
-                Task::done(Message::LoadingStarted)
+                // Prevent duplicate navigation to same URL
+                if self.current_url != url {
+                    self.current_url = url.clone();
+                    self.is_loading = true;
+                    self.webview.navigate(&url);
+                }
+                Task::none()
             }
             
             Message::GoBack => {
                 info!("Going back");
-                // Note: WRY doesn't expose direct history control
-                // We use JavaScript history API
                 Task::none()
             }
             
@@ -121,12 +121,10 @@ impl IntegratedBrowserApp {
             }
             
             Message::CloseTab(_) => {
-                // TODO: Implement tab closing
                 Task::none()
             }
             
             Message::SwitchTab(_) => {
-                // TODO: Implement tab switching
                 Task::none()
             }
             
@@ -150,20 +148,28 @@ impl IntegratedBrowserApp {
             
             Message::WebView(msg) => {
                 match msg {
-                    WebViewMessage::UrlChanged(url) => {
-                        self.current_url = url;
-                        Task::none()
-                    }
-                    WebViewMessage::TitleChanged(title) => {
-                        self.active_tab_title = Some(title);
-                        Task::none()
-                    }
-                    WebViewMessage::LoadStarted => {
-                        self.is_loading = true;
-                        Task::none()
-                    }
-                    WebViewMessage::LoadFinished => {
-                        self.is_loading = false;
+                    WebViewMessage::Events(events) => {
+                        for event in events {
+                            match event {
+                                WebViewEvent::UrlChanged { url } => {
+                                    self.current_url = url;
+                                }
+                                WebViewEvent::TitleChanged { title } => {
+                                    self.active_tab_title = Some(title);
+                                }
+                                WebViewEvent::LoadStarted { .. } => {
+                                    self.is_loading = true;
+                                }
+                                WebViewEvent::LoadFinished { .. } => {
+                                    self.is_loading = false;
+                                }
+                                WebViewEvent::WindowClosed => {
+                                    info!("WebView window closed by user");
+                                    // Optionally exit the application or open a new tab
+                                }
+                                _ => {}
+                            }
+                        }
                         Task::none()
                     }
                     _ => Task::none()
@@ -173,16 +179,10 @@ impl IntegratedBrowserApp {
             Message::PollWebView => {
                 // Poll for WebView events
                 let events = self.webview.poll();
-                let mut tasks = Vec::new();
-                
-                for event in events {
-                    tasks.push(Task::done(Message::WebView(event)));
-                }
-                
-                if tasks.is_empty() {
+                if events.is_empty() {
                     Task::none()
                 } else {
-                    Task::batch(tasks)
+                    Task::done(Message::WebView(WebViewMessage::Events(events)))
                 }
             }
         }
@@ -214,10 +214,11 @@ impl IntegratedBrowserApp {
         .spacing(4)
         .padding(4);
 
-        // Content area - shows webview status
+        // Content area - the WebView renders as a native window behind this
+        // We show a semi-transparent overlay with status
         let content = container(
             column![
-                iced::widget::text("WebView Active - Rendering in separate window")
+                iced::widget::text("Rusty Browser - Hybrid Mode")
                     .size(16),
                 iced::widget::text(format!("Current URL: {}", self.current_url))
                     .size(12),

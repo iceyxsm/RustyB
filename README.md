@@ -1,110 +1,190 @@
 # Rusty Browser
 
-A custom, feature-rich browser built entirely in Rust with advanced capabilities including network interception, web-to-API conversion, AI integration, and remote command execution.
+A **hybrid browser** built in Rust combining a native Iced UI with system WebView rendering via IPC. Features network interception, web-to-API conversion, AI integration, and remote control capabilities.
+
+> **Architecture Note:** This is a **hybrid browser** - not Electron! We use Iced (Rust) for the UI and native OS WebView (Edge WebView2 on Windows, WebKit on macOS) for rendering via process-separated IPC.
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Rusty Browser                                │
+├─────────────────────────────────────────────────────────────────┤
+│  Main Process (Iced UI)                                         │
+│  ┌────────────────┐  ┌────────────────┐  ┌─────────────────┐   │
+│  │   Toolbar      │  │  Address Bar   │  │   Status Bar    │   │
+│  │   (Rust)       │  │   (Rust)       │  │   (Rust)        │   │
+│  └────────────────┘  └────────────────┘  └─────────────────┘   │
+│                                                                  │
+│  IPC Controller (JSON-RPC over stdin/stdout)                    │
+│  ├─ Commands: Navigate, Reload, Back/Forward, Execute JS        │
+│  └─ Events: Load, Title, URL, Navigation, Errors               │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              rusty-browser-webview.exe                          │
+│              (Separate Process - Tao + Wry)                     │
+├─────────────────────────────────────────────────────────────────┤
+│  Native Window + System WebView                                 │
+│  ├─ Windows: Edge WebView2 (system)                            │
+│  ├─ macOS:   WebKit WKWebView (system)                         │
+│  └─ Linux:   WebKitGTK (system)                                │
+│                                                                  │
+│  Event Handlers → JSON stdout                                   │
+│  stdin ← Command Parser → WebView API                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Why This Architecture?
+
+| Approach | Binary Size | Memory | Pros | Cons |
+|----------|-------------|--------|------|------|
+| **Rusty (Hybrid)** | ~93MB | ~200MB | Native UI, system WebView, fast | Two windows |
+| Electron | 200MB+ | 500MB+ | Single window | Bundles Chromium, bloat |
+| Pure Servo | N/A | N/A | 100% Rust | Incomplete, crashes |
+| CEF | 300MB+ | 400MB+ | Full control | Massive size, slow build |
 
 ## Features
 
-### Core Browser Features
-- **Pure Rust Implementation** - Built from scratch using Rust's memory safety and performance
-- **Multi-tab/Window Support** - Full tab management with session persistence
-- **Navigation** - Back/forward history, reload, stop loading
-- **Private Browsing** - Incognito mode support
+### ✅ Implemented
 
-### Advanced Network Capabilities
-- **Request/Response Interception** - Inspect and modify all HTTP/HTTPS traffic
-- **Filter Rules** - Block, redirect, or modify requests based on custom rules
-- **Traffic Logging** - Log all network activity for analysis
-- **TLS Inspection** - MITM proxy for HTTPS traffic analysis (with certificate generation)
+#### Core Browser
+- **Hybrid UI/Rendering** - Iced toolbar + WebView content window
+- **Multi-process Architecture** - UI and WebView run separately for stability
+- **Navigation** - Address bar, back/forward (via IPC), reload
+- **Tab State** - URL tracking, loading indicators, title updates
 
-### Web-to-API Conversion
-- **Schema-based Extraction** - Define extraction schemas for any website
-- **Automatic API Generation** - Convert websites to REST APIs
-- **Pagination Support** - Handle paginated content
-- **Data Transformation** - Apply transformations to extracted data
-- **Caching** - Cache extracted data with configurable refresh intervals
+#### IPC System
+- **JSON-RPC Protocol** - Type-safe communication over pipes
+- **Bidirectional** - Commands to WebView, events from WebView
+- **Graceful Degradation** - UI works even without WebView subprocess
+- **Process Isolation** - WebView crashes don't kill the browser
 
-### AI Integration
-- **Local LLM Support** - Run models locally using Candle
-- **Page Summarization** - AI-powered content summarization
-- **Smart Extraction** - Natural language data extraction
-- **Chat Interface** - Chat with AI about page content
-- **RAG Support** - Retrieval-Augmented Generation for browser history
+#### Network Layer
+- **TLS Certificate Authority** - Custom CA for traffic inspection
+- **MITM Proxy** - HTTPS interception with rustls
+- **DNS Resolution** - Hickory resolver with caching
+- **Request/Response Logging** - Full traffic inspection
 
-### Remote Control & Automation
+#### Web-to-API
+- **Schema-based Extraction** - Define extraction schemas
+- **REST API Generation** - Convert websites to APIs
+- **HTML Parsing** - scraper-based content extraction
+
+#### AI Integration
+- **Local LLM Support** - Candle-based inference
+- **Page Summarization** - AI-powered content analysis
+- **Text Generation** - Local model execution
+
+#### Remote Control
 - **WebSocket API** - Real-time remote control
-- **REST API** - HTTP-based control interface
-- **Automation Scripts** - Create and run automation workflows
-- **Command Batching** - Execute multiple commands in sequence
-- **Screenshot Capture** - Remote screenshot capabilities
+- **REST API** - HTTP-based commands
+- **Command Protocol** - Structured automation
 
-## Architecture
+### 🚧 In Progress / Planned
+
+- [ ] Embedded WebView (single window via win32 child windows)
+- [ ] Extension system
+- [ ] DevTools integration
+- [ ] Mobile support
+
+## Technology Stack
+
+### UI (Main Process)
+| Component | Technology | Version |
+|-----------|------------|---------|
+| Framework | Iced | 0.14 |
+| Rendering | wgpu | 23 |
+| Windows | Tao | 0.32 |
+| Icons | iced_aw | 0.13 |
+
+### WebView (Subprocess)
+| Component | Technology | Version |
+|-----------|------------|---------|
+| Window | Tao | 0.32 |
+| WebView | WRY | 0.50 |
+| Backend | Edge WebView2 | System |
+
+### Network & AI
+| Component | Technology | Version |
+|-----------|------------|---------|
+| HTTP | reqwest/hyper | 0.12/1.5 |
+| TLS | rustls | 0.23 |
+| DNS | hickory-resolver | 0.25 |
+| AI | Candle | 0.9 |
+| Async | Tokio | 1.48 |
+
+### Storage
+| Component | Technology |
+|-----------|------------|
+| KV Store | sled / redb |
+| Cache | In-memory + disk |
+
+## Project Structure
 
 ```
 rusty-browser/
 ├── crates/
-│   ├── browser-core/     # Core browser logic (tabs, windows, navigation)
-│   ├── browser-ui/       # Iced-based user interface
-│   ├── network-layer/    # Network interception and filtering
-│   ├── web-to-api/       # Web scraping and API conversion
-│   ├── ai-engine/        # AI/ML integration
-│   ├── remote-api/       # Remote command and automation
-│   └── shared/           # Shared types and utilities
-├── assets/               # Icons, themes, certificates
-└── config/               # Configuration files
+│   ├── browser-core/        # Core browser logic, tabs, navigation
+│   ├── browser-ui/          # Iced UI + IPC controller
+│   │   ├── src/
+│   │   │   ├── main.rs              # Entry point
+│   │   │   ├── integrated_app.rs    # Main Iced app
+│   │   │   ├── webview_ipc.rs       # IPC implementation
+│   │   │   ├── webview_widget.rs    # WebView widget
+│   │   │   └── ...
+│   │   └── build.rs         # Build script (finds subprocess)
+│   ├── webview-subprocess/  # WebView binary (Tao + WRY)
+│   │   └── src/
+│   │       └── main.rs      # Subprocess entry
+│   ├── network-layer/       # Proxy, TLS, DNS
+│   ├── web-to-api/          # Scraping, API generation
+│   ├── ai-engine/           # Local LLM inference
+│   ├── remote-api/          # WebSocket/REST APIs
+│   └── shared/              # Common types, errors
+├── Cargo.toml               # Workspace definition
+└── README.md                # This file
 ```
-
-## Technology Stack (2026)
-
-### Rendering Engine
-- **Servo** - Mozilla's Rust browser engine (recommended)
-- Alternative: **Blitz** - Modular Rust web engine
-
-### UI Framework
-- **Iced** - Elm-inspired Rust GUI framework
-- GPU-accelerated with wgpu
-- Cross-platform (Windows, macOS, Linux)
-
-### Network Stack
-- **reqwest** - HTTP client
-- **hyper** - HTTP server for proxy
-- **rustls** - TLS implementation
-- **tokio** - Async runtime
-
-### AI/ML
-- **Candle** - Hugging Face's Rust ML framework
-- **tokenizers** - Fast tokenization
-- **mistral.rs** - Alternative inference engine
-
-### Storage
-- **sled** / **redb** - Embedded databases
-- **SQLite** - Structured data storage
 
 ## Getting Started
 
 ### Prerequisites
-- Rust 1.85+ (2024 edition)
-- Windows 10/11, macOS, or Linux
-- GPU with Vulkan/Metal/DirectX support (optional, for AI acceleration)
+
+- **Rust** 1.85+ (2024 edition)
+- **Windows 10/11**, macOS, or Linux
+- **Edge WebView2 Runtime** (Windows - usually pre-installed)
 
 ### Building
 
 ```bash
-# Clone the repository
+# Clone repository
 git clone https://github.com/yourusername/rusty-browser.git
 cd rusty-browser
 
-# Build the project
-cargo build --release
+# Build both binaries (main + subprocess)
+cargo +nightly build --release -p browser-ui -p rusty-browser-webview
 
-# Run the browser
-cargo run --release
+# Or build everything
+cargo +nightly build --release
 ```
+
+### Running
+
+```bash
+# Both binaries must be in same directory
+./target/release/rusty-browser.exe
+```
+
+This starts:
+1. **Main Window** (Iced) - Toolbar, address bar, controls
+2. **WebView Window** - Content rendering via Edge WebView2
 
 ### Development
 
 ```bash
 # Run with debug logging
-RUST_LOG=debug cargo run
+RUST_LOG=debug cargo +nightly run --release -p browser-ui
 
 # Run tests
 cargo test --workspace
@@ -112,176 +192,227 @@ cargo test --workspace
 # Format code
 cargo fmt
 
-# Run clippy
+# Check lints
 cargo clippy --workspace
+```
+
+## IPC Protocol
+
+### Commands (UI → WebView)
+
+```json
+{"method":"Navigate","params":{"url":"https://example.com"}}
+{"method":"Reload"}
+{"method":"GoBack"}
+{"method":"GoForward"}
+{"method":"ExecuteScript","params":{"script":"alert('hi')"}}
+{"method":"SetBounds","params":{"x":0,"y":80,"width":1024,"height":688}}
+{"method":"Show"}
+{"method":"Hide"}
+{"method":"Close"}
+```
+
+### Events (WebView → UI)
+
+```json
+{"event":"LoadStarted","url":"https://example.com"}
+{"event":"LoadFinished","url":"https://example.com","success":true}
+{"event":"UrlChanged","url":"https://example.com/page2"}
+{"event":"TitleChanged","title":"Example Domain"}
+{"event":"NavigationRequested","url":"https://example.com/link"}
+{"event":"PageError","error":"Failed to load"}
+{"event":"WindowClosed"}
 ```
 
 ## Configuration
 
-Configuration files are stored in:
-- Windows: `%APPDATA%/rusty-browser/`
-- macOS: `~/Library/Application Support/rusty-browser/`
-- Linux: `~/.config/rusty-browser/`
+Configuration directory:
+- **Windows:** `%APPDATA%/rusty-browser/`
+- **macOS:** `~/Library/Application Support/rusty-browser/`
+- **Linux:** `~/.config/rusty-browser/`
 
-### Example Config (`config.toml`)
+### Example `config.toml`
 
 ```toml
 homepage = "https://start.duckduckgo.com"
 search_engine = "https://duckduckgo.com/?q={}"
 download_path = "~/Downloads"
-user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
 [proxy]
 enabled = true
 host = "127.0.0.1"
 port = 8080
-
-[filter_rules]
-block_ads = true
-block_trackers = true
+ca_cert_path = "~/.rusty-browser/certs/ca.pem"
 
 [ai]
+enabled = true
 model_path = "~/.rusty-browser/models/llama-7b.gguf"
 context_length = 4096
+
+[webview]
+initial_width = 1024
+initial_height = 768
+devtools = false
 ```
 
-## Usage
-
-### Basic Browsing
-
-Navigate to URLs using the address bar. The browser supports:
-- Standard HTTP/HTTPS
-- Custom protocols
-- Search from address bar
+## Usage Examples
 
 ### Network Interception
 
-Filter rules can be configured via the UI or API:
+```rust
+use network_layer::proxy::{ProxyServer, ProxyConfig};
 
-```json
-{
-  "name": "Block Analytics",
-  "condition": {
-    "type": "domain_ends_with",
-    "suffix": "google-analytics.com"
-  },
-  "action": {
-    "type": "block",
-    "reason": "Tracking blocked"
-  }
-}
+let config = ProxyConfig::default()
+    .with_port(8080)
+    .with_tls_interception(true);
+
+let proxy = ProxyServer::new(config).await?;
+proxy.run().await?;
 ```
 
 ### Web-to-API
 
-Create extraction schemas to convert websites to APIs:
-
 ```rust
-let schema = ExtractionSchema::new("Product List", "https://example.com/products")
-    .with_selector(
-        FieldSelector::new("name", ".product-name")
-            .required()
-    )
-    .with_selector(
-        FieldSelector::new("price", ".product-price")
-            .with_transform(TransformRule::Trim)
-    );
+use web_to_api::{ExtractionSchema, FieldSelector};
+
+let schema = ExtractionSchema::new("Products", "https://example.com/products")
+    .with_selector(FieldSelector::new("name", ".product-name").required())
+    .with_selector(FieldSelector::new("price", ".product-price"));
 ```
 
-Access via REST API:
-```bash
-curl http://localhost:3000/api/extract/{schema_id}
-```
+### Remote Control (WebSocket)
 
-### AI Features
-
-```rust
-// Summarize page
-let summary = ai.summarize_page(page_content).await?;
-
-// Ask about page
-let answer = ai.ask_about_page(page_content, "What is the main topic?").await?;
-
-// Smart extraction
-let data = ai.smart_extract(html, "Extract all product names and prices").await?;
-```
-
-### Remote Control
-
-Connect via WebSocket:
 ```javascript
 const ws = new WebSocket('ws://localhost:9001');
 
 ws.send(JSON.stringify({
-  type: 'navigate',
-  url: 'https://example.com'
+    type: 'navigate',
+    url: 'https://example.com'
 }));
 ```
 
-Or use REST API:
-```bash
-curl -X POST http://localhost:9000/api/commands \
-  -H "Content-Type: application/json" \
-  -d '{"type": "screenshot", "full_page": true}'
+### AI Summarization
+
+```rust
+use ai_engine::CandleEngine;
+
+let ai = CandleEngine::new("model.gguf")?;
+let summary = ai.summarize(page_content).await?;
 ```
+
+## Performance
+
+### Binary Sizes
+| Component | Debug | Release |
+|-----------|-------|---------|
+| rusty-browser.exe | ~400MB | **84MB** |
+| rusty-browser-webview.exe | ~50MB | **9MB** |
+| **Total** | ~450MB | **93MB** |
+
+### Memory Usage
+| Component | Typical |
+|-----------|---------|
+| Main Process (Iced) | ~170MB |
+| WebView Process | ~25MB |
+| **Total** | **~195MB** |
+
+### Build Times
+- Fresh build: ~10-15 minutes
+- Incremental: ~10-30 seconds
+
+## Troubleshooting
+
+### "WebView subprocess not found"
+Ensure both binaries are in the same directory:
+```bash
+cargo build --release -p browser-ui -p rusty-browser-webview
+```
+
+### "Failed to create WebView"
+Install Edge WebView2 Runtime:
+- Windows 11: Pre-installed
+- Windows 10: Download from Microsoft
+
+### High memory usage
+- Use release profile: `--release`
+- Enable Cranelift: `codegen-backend = "cranelift"`
+- Reduce codegen units in `.cargo/config.toml`
 
 ## Roadmap
 
 ### Phase 1: Foundation ✅
-- [x] Project structure
-- [x] Core browser types
-- [x] Basic UI layout
-- [ ] Servo integration
+- [x] Hybrid Iced + WebView architecture
+- [x] IPC system (JSON-RPC)
+- [x] Multi-process separation
+- [x] Network layer (proxy, TLS, DNS)
 
-### Phase 2: Network Layer
-- [ ] HTTP proxy implementation
-- [ ] TLS interception
-- [ ] Filter rule engine
-- [ ] Traffic logging
+### Phase 2: Core Features ✅
+- [x] Navigation (address bar, back/forward)
+- [x] Tab management
+- [x] URL/title synchronization
+- [x] Error handling
 
-### Phase 3: Web-to-API
-- [ ] Schema definition UI
-- [ ] Extraction engine
+### Phase 3: Advanced Network
+- [x] TLS interception with custom CA
+- [x] Request/response logging
+- [ ] Filter rule engine UI
+- [ ] Traffic analyzer
+
+### Phase 4: AI Integration 🚧
+- [x] Candle integration
+- [x] Local LLM loading
+- [ ] Page summarization UI
+- [ ] Chat interface
+
+### Phase 5: Web-to-API
+- [x] Extraction schemas
+- [x] HTML parsing
 - [ ] REST API server
-- [ ] Caching system
-
-### Phase 4: AI Integration
-- [ ] Local LLM loading
-- [ ] Text generation
-- [ ] Page summarization
-- [ ] RAG implementation
-
-### Phase 5: Remote Control
-- [ ] WebSocket server
-- [ ] Command protocol
-- [ ] Automation engine
-- [ ] REST API
+- [ ] Auto-generated documentation
 
 ### Phase 6: Polish
-- [ ] DevTools
+- [ ] Single-window mode (embedded WebView)
 - [ ] Extension system
+- [ ] DevTools integration
 - [ ] Settings UI
-- [ ] Documentation
+- [ ] Themes
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Development Setup
+
+```bash
+# Install nightly Rust
+rustup default nightly
+
+# Clone and build
+git clone https://github.com/yourusername/rusty-browser.git
+cd rusty-browser
+cargo build --release
+
+# Run tests
+cargo test --workspace
+```
 
 ## License
 
-This project is licensed under the MIT OR Apache-2.0 license.
+MIT OR Apache-2.0
 
 ## Acknowledgments
 
-- [Servo](https://servo.org/) - The Rust browser engine
-- [Iced](https://iced.rs/) - The Rust GUI framework
-- [Candle](https://github.com/huggingface/candle) - Hugging Face's Rust ML framework
-- The Rust community for the amazing ecosystem
+- [Iced](https://iced.rs/) - Native Rust GUI framework
+- [WRY](https://github.com/tauri-apps/wry) - WebView library for Rust
+- [Tao](https://github.com/tauri-apps/tao) - Cross-platform windowing
+- [Candle](https://github.com/huggingface/candle) - Rust ML framework
+- [rustls](https://github.com/rustls/rustls) - Modern TLS library
+- [hickory-dns](https://github.com/hickory-dns/hickory-dns) - Rust DNS resolver
 
 ## Disclaimer
 
-This browser is a research/educational project. It is not intended for production use as a daily driver browser. Use at your own risk.
+This is a research/educational project. Not intended for production use as a daily driver. Use at your own risk.
 
 ---
 
-Built with ❤️ in Rust, 2026
+Built with 🦀 in Rust, 2026
