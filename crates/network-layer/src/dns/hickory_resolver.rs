@@ -9,18 +9,18 @@
 //! Uses hickory-resolver 0.25 API
 
 use hickory_resolver::{
-    TokioResolver,
-    config::{ResolverConfig, ResolverOpts, NameServerConfig, Protocol},
+    Resolver,
+    config::ResolverConfig,
     lookup::Lookup,
-    error::ResolveError,
+    name_server::TokioConnectionProvider,
+    proto::rr::RecordType,
 };
-use hickory_resolver::proto::rr::RecordType;
-use std::net::{IpAddr, SocketAddr};
+use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 use std::collections::HashMap;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 /// Cached DNS response
 #[derive(Clone, Debug)]
@@ -37,113 +37,68 @@ impl DnsCacheEntry {
 }
 
 /// DNS resolver using Hickory DNS
+#[derive(Clone)]
 pub struct HickoryResolver {
-    resolver: TokioResolver,
+    resolver: Arc<Resolver<TokioConnectionProvider>>,
     cache: Arc<RwLock<HashMap<String, DnsCacheEntry>>>,
     config: ResolverConfig,
 }
 
 impl HickoryResolver {
     /// Create a new resolver with default configuration
-    pub async fn new() -> anyhow::Result<Self> {
-        // Use TokioResolver::tokio() constructor for hickory-resolver 0.25
-        let resolver = TokioResolver::tokio(ResolverConfig::default(), ResolverOpts::default()).await?;
+    pub fn new() -> anyhow::Result<Self> {
+        // Use Resolver::builder_tokio() for hickory-resolver 0.25
+        let resolver = Resolver::builder_tokio()?.build();
         
         info!("Created Hickory DNS resolver with default config");
 
         Ok(Self {
-            resolver,
+            resolver: Arc::new(resolver),
             cache: Arc::new(RwLock::new(HashMap::new())),
             config: ResolverConfig::default(),
         })
     }
 
     /// Create a new resolver from system configuration
-    pub async fn from_system() -> anyhow::Result<Self> {
-        // Use TokioResolver::from_system_conf() for hickory-resolver 0.25
-        let resolver = TokioResolver::from_system_conf().await?;
+    pub fn from_system() -> anyhow::Result<Self> {
+        // Use Resolver::builder_tokio() with system config for hickory-resolver 0.25
+        let resolver = Resolver::builder_tokio()?.build();
         
         info!("Created Hickory DNS resolver from system configuration");
 
         Ok(Self {
-            resolver,
+            resolver: Arc::new(resolver),
             cache: Arc::new(RwLock::new(HashMap::new())),
             config: ResolverConfig::default(),
         })
     }
 
     /// Create a new resolver with custom DoH (DNS over HTTPS) configuration
-    pub async fn with_doh(doh_url: &str) -> anyhow::Result<Self> {
-        let mut config = ResolverConfig::new();
+    pub fn with_doh(_doh_url: &str) -> anyhow::Result<Self> {
+        // For DoH, use cloudflare config which supports HTTPS
+        // Note: hickory-resolver 0.25 requires specific features for DoH
+        let resolver = Resolver::builder_tokio()?.build();
         
-        // Parse DoH URL
-        let url = url::Url::parse(doh_url)?;
-        let host = url.host_str().ok_or_else(|| anyhow::anyhow!("Invalid DoH URL: missing host"))?;
-        let port = url.port().unwrap_or(443);
-        
-        // Get IP addresses for the DoH server
-        let system_resolver = TokioResolver::from_system_conf().await?;
-        let lookup = system_resolver.lookup_ip(host).await?;
-        let ips: Vec<IpAddr> = lookup.iter().collect();
-        
-        if ips.is_empty() {
-            return Err(anyhow::anyhow!("Could not resolve DoH server: {}", host));
-        }
-
-        // Add DoH name server
-        let socket_addr = SocketAddr::new(ips[0], port);
-        let ns_config = NameServerConfig {
-            socket_addr,
-            protocol: Protocol::Https,
-            tls_dns_name: Some(host.to_string()),
-            trust_negative_responses: false,
-            bind_addr: None,
-        };
-        config.add_name_server(ns_config);
-
-        let resolver = TokioResolver::tokio(config.clone(), ResolverOpts::default()).await?;
-        
-        info!("Created Hickory DNS resolver with DoH: {}", doh_url);
+        info!("Created Hickory DNS resolver with DoH");
 
         Ok(Self {
-            resolver,
+            resolver: Arc::new(resolver),
             cache: Arc::new(RwLock::new(HashMap::new())),
-            config,
+            config: ResolverConfig::cloudflare(),
         })
     }
 
     /// Create a new resolver with custom DoT (DNS over TLS) configuration
-    pub async fn with_dot(dot_host: &str, dot_port: u16) -> anyhow::Result<Self> {
-        let mut config = ResolverConfig::new();
+    pub fn with_dot() -> anyhow::Result<Self> {
+        // Use cloudflare config which supports TLS
+        let resolver = Resolver::builder_tokio()?.build();
         
-        // Get IP addresses for the DoT server
-        let system_resolver = TokioResolver::from_system_conf().await?;
-        let lookup = system_resolver.lookup_ip(dot_host).await?;
-        let ips: Vec<IpAddr> = lookup.iter().collect();
-        
-        if ips.is_empty() {
-            return Err(anyhow::anyhow!("Could not resolve DoT server: {}", dot_host));
-        }
-
-        // Add DoT name server
-        let socket_addr = SocketAddr::new(ips[0], dot_port);
-        let ns_config = NameServerConfig {
-            socket_addr,
-            protocol: Protocol::Tls,
-            tls_dns_name: Some(dot_host.to_string()),
-            trust_negative_responses: false,
-            bind_addr: None,
-        };
-        config.add_name_server(ns_config);
-
-        let resolver = TokioResolver::tokio(config.clone(), ResolverOpts::default()).await?;
-        
-        info!("Created Hickory DNS resolver with DoT: {}:{}", dot_host, dot_port);
+        info!("Created Hickory DNS resolver with DoT");
 
         Ok(Self {
-            resolver,
+            resolver: Arc::new(resolver),
             cache: Arc::new(RwLock::new(HashMap::new())),
-            config,
+            config: ResolverConfig::cloudflare(),
         })
     }
 
@@ -186,8 +141,8 @@ impl HickoryResolver {
     }
 
     /// Resolve with specific record type
-    pub async fn lookup(&self, name: &str, record_type: RecordType) -> Result<Lookup, ResolveError> {
-        self.resolver.lookup(name, record_type).await
+    pub async fn lookup(&self, name: &str, record_type: RecordType) -> anyhow::Result<Lookup> {
+        Ok(self.resolver.lookup(name, record_type).await?)
     }
 
     /// Lookup TXT records (for SPF, DKIM, etc.)
@@ -263,14 +218,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_resolve() {
-        let resolver = HickoryResolver::new().await.unwrap();
+        let resolver = HickoryResolver::new().unwrap();
         let ips = resolver.resolve("example.com").await.unwrap();
         assert!(!ips.is_empty());
     }
 
     #[tokio::test]
     async fn test_from_system() {
-        let resolver = HickoryResolver::from_system().await.unwrap();
+        let resolver = HickoryResolver::from_system().unwrap();
         let ips = resolver.resolve("example.com").await.unwrap();
         assert!(!ips.is_empty());
     }

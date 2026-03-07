@@ -10,7 +10,7 @@
 //! - Ad blocking integration
 //! - Privacy protection
 
-use crate::dns::hickory_resolver::{DnsConfig, HickoryResolver};
+use crate::dns::hickory_resolver::HickoryResolver;
 use crate::interceptor::{InterceptorChain, InterceptorError};
 use crate::proxy::ca::CertificateAuthority;
 use crate::proxy::tls::{TlsConfig, is_tls_client_hello};
@@ -132,11 +132,11 @@ impl MitmProxy {
         info!("Certificate Authority initialized");
 
         // Initialize DNS resolver
-        let dns_config = DnsConfig {
-            use_doh: config.dns_over_https,
-            ..Default::default()
+        let dns_resolver = if config.dns_over_https {
+            HickoryResolver::with_doh("https://cloudflare-dns.com/dns-query")?
+        } else {
+            HickoryResolver::new()?
         };
-        let dns_resolver = HickoryResolver::new(dns_config).await?;
         info!("DNS resolver initialized");
 
         // Initialize TLS config

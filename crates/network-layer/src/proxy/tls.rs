@@ -52,9 +52,11 @@ impl TlsConfig {
         domain: &str,
     ) -> anyhow::Result<TlsAcceptor> {
         // Generate certificate for this domain
-        let (cert, key) = self.ca.generate_domain_cert(domain).await?;
+        let cached_cert = self.ca.generate_domain_cert(domain).await?;
 
         // Build server config
+        let cert = cached_cert.cert.clone();
+        let key = cached_cert.key();
         let config = self.build_server_config(cert, key)?;
 
         Ok(TlsAcceptor::from(Arc::new(config)))
