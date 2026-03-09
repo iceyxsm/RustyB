@@ -59,6 +59,9 @@ reqwest.workspace = true
 wry = "0.50"
 tao = "0.32"
 
+# File watching for hot reload
+notify = "7"
+
 # Platform-specific dependencies
 [target.'cfg(target_os = "macos")'.dependencies]
 # metal = { version = "0.29", optional = true }
@@ -71,6 +74,7 @@ default = ["system-theme-detection", "surfman"]
 metal-support = []  # "metal"
 dx11-support = []   # "windows"
 system-theme-detection = []
+winit = []
 
 [dev-dependencies]
 tokio-test.workspace = true

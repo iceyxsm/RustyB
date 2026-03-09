@@ -2,8 +2,7 @@
 
 use browser_core::session::BrowserSession;
 use iced::{
-    widget::{button, column, container, row, text, text_input},
-    Center, Element, Length, Task, Theme,
+    widget::{button, column, container, row, text, text_input}, Element, Length, Task, Theme,
 };
 use shared::BrowserConfig;
 use std::sync::Arc;

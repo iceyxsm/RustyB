@@ -1,6 +1,5 @@
 //! Browser session management - Stub implementation
 
-use crate::webview::WebView;
 use shared::BrowserConfig;
 use std::sync::Arc;
 use tokio::sync::RwLock;

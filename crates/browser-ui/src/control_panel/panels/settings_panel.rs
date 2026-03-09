@@ -76,7 +76,7 @@ impl SettingsPanel {
         }
     }
 
-    pub fn view(&self) -> Element<SettingsMessage> {
+    pub fn view(&self) -> Element<'_, SettingsMessage> {
         let theme = &self.theme;
 
         let title = text(self.title())

@@ -256,7 +256,7 @@ impl TwoWindowBrowser {
         }
     }
     
-    pub fn view(&self, window_id: window::Id) -> Element<Message> {
+    pub fn view(&self, window_id: window::Id) -> Element<'_, Message> {
         if window_id == self.windows.main {
             self.view_main_window()
         } else if Some(window_id) == self.windows.tools {
@@ -267,7 +267,7 @@ impl TwoWindowBrowser {
     }
     
     /// Main browser window view
-    fn view_main_window(&self) -> Element<Message> {
+    fn view_main_window(&self) -> Element<'_, Message> {
         // === TOP NAVIGATION BAR ===
         let nav_bar = row![
             button("<-").on_press(Message::GoBack),
@@ -323,7 +323,7 @@ impl TwoWindowBrowser {
     }
     
     /// Tools/Control Panel window view
-    fn view_tools_window(&self) -> Element<Message> {
+    fn view_tools_window(&self) -> Element<'_, Message> {
         let header = row![
             text("Control Panel")
                 .size(18),

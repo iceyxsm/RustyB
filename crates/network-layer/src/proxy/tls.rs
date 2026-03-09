@@ -25,6 +25,7 @@ pub struct TlsConfig {
     /// Enable HTTP/2 ALPN
     http2_enabled: bool,
     /// Enable HTTP/3
+    #[allow(dead_code)]
     http3_enabled: bool,
 }
 

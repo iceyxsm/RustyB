@@ -8,7 +8,8 @@ use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{broadcast, mpsc, RwLock};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
+use base64::Engine;
 use uuid::Uuid;
 
 /// WebSocket command server
@@ -20,8 +21,8 @@ pub struct WebSocketServer {
 }
 
 struct Connection {
-    id: Uuid,
-    addr: SocketAddr,
+    _id: Uuid,
+    _addr: SocketAddr,
     tx: mpsc::Sender<Message>,
 }
 
@@ -91,8 +92,8 @@ impl WebSocketServer {
         {
             let mut conns = connections.write().await;
             conns.insert(connection_id, Connection {
-                id: connection_id,
-                addr,
+                _id: connection_id,
+                _addr: addr,
                 tx: tx.clone(),
             });
         }
@@ -286,7 +287,7 @@ impl CommandProcessor {
             RemoteCommand::Screenshot { full_page, .. } => {
                 match self.browser_controller.screenshot(full_page).await {
                     Ok(data) => {
-                        let base64 = base64::encode(&data);
+                        let base64 = base64::engine::general_purpose::STANDARD.encode(&data);
                         CommandResult::success(serde_json::json!({"screenshot": base64}))
                     }
                     Err(e) => CommandResult::error(format!("Screenshot failed: {}", e)),

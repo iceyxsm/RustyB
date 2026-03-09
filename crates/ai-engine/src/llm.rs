@@ -89,6 +89,7 @@ pub struct ModelInfo {
 
 /// Candle-based LLM implementation
 pub struct CandleLlm {
+    #[allow(dead_code)]
     model: Arc<RwLock<Option<()>>>, // Placeholder for actual model
     tokenizer: Arc<RwLock<Option<tokenizers::Tokenizer>>>,
     model_info: ModelInfo,

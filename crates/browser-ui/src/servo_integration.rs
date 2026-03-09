@@ -53,17 +53,17 @@ use crate::gpu_renderer::{GpuRenderer, GpuFrame, RenderMode, InputEvent, InputBa
 use browser_core::webview::{
     InputEvent as CoreInputEvent, MouseMoveEvent, MouseButtonEvent, MouseButton, MouseButtonAction,
     WheelEvent, WheelDelta, WheelMode, KeyboardEvent, Modifiers, KeyState, TouchEvent, TouchId,
-    TouchEventType, Point2D, Size2D, LoadState, WebViewDelegate, ServoDelegate,
-    WebView as CoreWebViewTrait, WindowMethods, EmbedderCoordinates, Rect, AnimationState,
+    TouchEventType, Point2D, LoadState,
+
 };
-use crossbeam_channel::{bounded, unbounded, Sender, Receiver, TryRecvError};
+use crossbeam_channel::{unbounded, Sender, Receiver, TryRecvError};
 use parking_lot::{Mutex, RwLock};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tracing::{debug, error, info, trace, warn};
+use tracing::{error, info, trace};
 use thiserror::Error;
-use raw_window_handle::{HasWindowHandle, WindowHandle};
+use raw_window_handle::WindowHandle;
 
 // Re-export key types
 pub use browser_core::webview::{
@@ -85,7 +85,7 @@ const MAX_INPUT_BATCH_SIZE: usize = 64;
 const TARGET_FPS: u32 = 60;
 
 /// Frame time for 60 FPS (16.67ms)
-const FRAME_TIME_MS: f64 = 1000.0 / 60.0;
+const _FRAME_TIME_MS: f64 = 1000.0 / 60.0;
 
 /// Error types for Servo integration
 #[derive(Debug, Error)]
@@ -271,12 +271,15 @@ impl From<TouchPhase> for TouchEventType {
 }
 
 /// Platform-specific GL context handle
+#[allow(unused)]
 #[cfg(target_os = "linux")]
 type NativeGLContext = surfman::NativeContext;
 
+#[allow(unused)]
 #[cfg(target_os = "windows")]
 type NativeGLContext = surfman::NativeContext;
 
+#[allow(unused)]
 #[cfg(target_os = "macos")]
 type NativeGLContext = surfman::NativeContext;
 
@@ -338,7 +341,7 @@ impl GlContextManager {
         *dims = (width, height);
         
         // Recreate surface with new dimensions
-        let mut surface_guard = self.surface.lock();
+        let surface_guard = self.surface.lock();
         if surface_guard.is_some() {
             // Surface recreation would happen here
             // For now, just update dimensions
@@ -354,7 +357,7 @@ impl GlContextManager {
     
     /// Make context current
     pub fn make_current(&self) -> Result<()> {
-        let context = self.context.lock();
+        let _context = self.context.lock();
         // Context is already current in surfman model
         Ok(())
     }
@@ -396,7 +399,7 @@ impl ServoEventLoopWaker {
 
 /// Internal events for Servo communication
 #[derive(Debug, Clone)]
-enum ServoEvent {
+pub enum ServoEvent {
     /// Wake the event loop
     Wake,
     /// New frame available
@@ -516,10 +519,13 @@ pub struct ServoWebView {
     /// FPS profiler
     profiler: Mutex<FpsProfiler>,
     /// Frame queue for completed frames
+    #[allow(dead_code)]
     frame_queue: Arc<Mutex<Vec<ServoFrame>>>,
     /// Current frame index
+    #[allow(dead_code)]
     frame_index: AtomicU64,
     /// Rendering state
+    #[allow(dead_code)]
     render_state: RwLock<RenderPipelineState>,
     /// Running flag
     running: AtomicBool,
@@ -868,7 +874,7 @@ impl ServoWebView {
     
     /// Submit a completed frame
     pub fn submit_frame(&self, frame: Arc<Mutex<GpuFrame>>) -> Result<()> {
-        let mut renderer = self.gpu_renderer.lock();
+        let renderer = self.gpu_renderer.lock();
         renderer.submit_frame(frame)?;
         self.event_waker.wake_for_frame();
         Ok(())
@@ -1399,7 +1405,7 @@ pub mod cpu_fallback {
     //! When GPU texture sharing is not available, this module provides
     //! efficient CPU-based pixel readback and upload.
     
-    use super::*;
+    
     
     /// Read pixels from a GL framebuffer
     /// 
@@ -1523,6 +1529,7 @@ pub mod renderer_integration {
     /// Connection handle between ServoWebView and GpuRenderer
     pub struct ServoRendererConnection {
         servo: Arc<ServoWebView>,
+        #[allow(dead_code)]
         gpu_renderer: Arc<Mutex<GpuRenderer>>,
     }
     

@@ -10,9 +10,9 @@ use iced::{
     widget::{button, column, container, row, text, text_input, Space},
     Element, Length, Task, Theme, Subscription, Alignment,
 };
-use tracing::{error, info};
+use tracing::info;
 
-use crate::window_manager::{init_window_manager, find_and_position_webview, position_control_panel};
+use crate::window_manager::init_window_manager;
 use crate::control_panel::{
     sidebar::{Sidebar, SidebarMessage},
     panels::{

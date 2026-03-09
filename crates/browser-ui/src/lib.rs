@@ -27,6 +27,11 @@ pub mod window_manager;
 pub mod single_window_app;
 pub mod two_window_app;
 
+// Hot reload for development
+pub mod hot_reload;
+
+pub use hot_reload::{HotReloadServer, DevServerConfig, FileWatcher, start_dev_server};
+
 pub use app::{BrowserApp, Message as AppMessage};
 pub use gpu_renderer::{GpuRenderer, RenderMode, InputEvent as GpuInputEvent, InputBatcher, FpsProfiler, GpuFrame};
 pub use hybrid_app::{HybridBrowserApp, Message as HybridMessage};

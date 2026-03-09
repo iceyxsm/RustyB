@@ -114,7 +114,7 @@ impl AiPanel {
         }
     }
 
-    pub fn view(&self) -> Element<AiMessage> {
+    pub fn view(&self) -> Element<'_, AiMessage> {
         let theme = &self.theme;
 
         // Title

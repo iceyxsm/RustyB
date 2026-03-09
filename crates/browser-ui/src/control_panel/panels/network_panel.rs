@@ -1,7 +1,7 @@
 //! Network tools panel - Proxy, Ad Blocker, DNS settings
 
 use iced::{
-    widget::{button, column, container, row, text, toggler, slider, scrollable, text_input},
+    widget::{button, column, container, row, text, toggler, scrollable, text_input},
     Element, Length, Alignment,
 };
 use crate::theme::{container_background, text_color, ContainerStyle, TextStyle, BrowserTheme};
@@ -75,7 +75,7 @@ impl NetworkPanel {
         }
     }
 
-    pub fn view(&self) -> Element<NetworkMessage> {
+    pub fn view(&self) -> Element<'_, NetworkMessage> {
         let theme = &self.theme;
 
         // Title

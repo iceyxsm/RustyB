@@ -18,8 +18,10 @@ use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 /// Default CA certificate validity period (10 years)
+#[allow(unused)]
 const CA_VALIDITY_YEARS: i32 = 10;
 /// Default domain certificate validity period (1 year)
+#[allow(unused)]
 const DOMAIN_VALIDITY_YEARS: i32 = 1;
 /// Certificate cache TTL (30 days)
 const CACHE_TTL_DAYS: u64 = 30;
@@ -63,6 +65,7 @@ pub struct CertificateAuthority {
     /// Certificate cache: domain -> cached certificate
     cert_cache: Arc<RwLock<HashMap<String, CachedCert>>>,
     /// Storage path for CA certificate
+    #[allow(dead_code)]
     storage_path: Option<PathBuf>,
 }
 
@@ -188,7 +191,7 @@ impl CertificateAuthority {
     fn parse_ca_params_from_pem(cert_pem: &str) -> anyhow::Result<CertificateParams> {
         use std::vec::Vec;
         use x509_parser::pem::parse_x509_pem;
-        use x509_parser::prelude::*;
+        
 
         let pem = parse_x509_pem(cert_pem.as_bytes())
             .map_err(|e| anyhow::anyhow!("Failed to parse PEM: {:?}", e))?

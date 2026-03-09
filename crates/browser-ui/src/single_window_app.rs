@@ -6,7 +6,7 @@
 //! - Both share the same window frame
 
 use iced::{
-    widget::{button, column, container, row, text, text_input, Space},
+    widget::{button, column, container, row, text, text_input},
     Element, Length, Task, Theme, Subscription, Alignment,
 };
 use tracing::info;

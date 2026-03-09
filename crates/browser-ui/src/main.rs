@@ -3,7 +3,7 @@
 //! Window 1: Control Panel (Iced) - positioned at left
 //! Window 2: WebView (Edge WebView2 via WRY) - positioned at right
 
-use browser_ui::hybrid_app::{HybridBrowserApp, Message};
+use browser_ui::hybrid_app::HybridBrowserApp;
 use iced::window;
 
 fn main() -> iced::Result {

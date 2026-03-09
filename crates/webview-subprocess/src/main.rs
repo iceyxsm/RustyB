@@ -46,6 +46,7 @@ enum EventMsg {
     TitleChanged { title: String },
     NavigationRequested { url: String },
     PageError { error: String },
+    #[allow(dead_code)]
     ConsoleMessage { level: String, message: String },
     WindowClosed,
 }

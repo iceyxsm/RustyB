@@ -47,13 +47,13 @@ impl ExtractionTool {
         id
     }
 
-    pub fn extract(&self, schema_id: Uuid, html: &str) -> Result<String, String> {
+    pub fn extract(&self, schema_id: Uuid, _html: &str) -> Result<String, String> {
         info!("Extracting with schema: {}", schema_id);
         // TODO: Integrate with web_to_api::extractor
         Ok("Extracted data".to_string())
     }
 
-    pub fn export(&self, data: &str, format: ExportFormat) -> Result<String, String> {
+    pub fn export(&self, _data: &str, format: ExportFormat) -> Result<String, String> {
         info!("Exporting data as {:?}", format);
         // TODO: Implement export
         Ok("Exported data".to_string())

@@ -1,8 +1,8 @@
 //! Developer Tools panel - Inspector, Console, Network
 
 use iced::{
-    widget::{button, column, container, row, text, text_input, scrollable, pick_list},
-    Element, Length, Alignment,
+    widget::{button, column, container, row, text, text_input, scrollable},
+    Element, Length,
 };
 use crate::theme::{container_background, text_color, ContainerStyle, TextStyle, BrowserTheme};
 
@@ -89,7 +89,7 @@ impl DevToolsPanel {
         }
     }
 
-    pub fn view(&self) -> Element<DevToolsMessage> {
+    pub fn view(&self) -> Element<'_, DevToolsMessage> {
         let theme = &self.theme;
 
         let title = text(self.title())
@@ -107,7 +107,7 @@ impl DevToolsPanel {
                 button(text(tab.name()).size(11))
                     .on_press(DevToolsMessage::TabSelected(tab))
                     .style(move |_, _| {
-                        let mut style = if is_active {
+                        let style = if is_active {
                             button_style_active(theme)
                         } else {
                             button_style_inactive(theme)
@@ -139,7 +139,7 @@ impl DevToolsPanel {
             .into()
     }
 
-    fn view_console(&self) -> Element<DevToolsMessage> {
+    fn view_console(&self) -> Element<'_, DevToolsMessage> {
         let theme = &self.theme;
 
         let mut output = column![]
@@ -176,7 +176,7 @@ impl DevToolsPanel {
             .into()
     }
 
-    fn view_network(&self) -> Element<DevToolsMessage> {
+    fn view_network(&self) -> Element<'_, DevToolsMessage> {
         let theme = &self.theme;
 
         container(
@@ -203,7 +203,7 @@ impl DevToolsPanel {
         .into()
     }
 
-    fn view_elements(&self) -> Element<DevToolsMessage> {
+    fn view_elements(&self) -> Element<'_, DevToolsMessage> {
         let theme = &self.theme;
 
         container(
@@ -225,7 +225,7 @@ impl DevToolsPanel {
         .into()
     }
 
-    fn view_storage(&self) -> Element<DevToolsMessage> {
+    fn view_storage(&self) -> Element<'_, DevToolsMessage> {
         let theme = &self.theme;
 
         container(

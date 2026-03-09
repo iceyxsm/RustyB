@@ -27,7 +27,7 @@ use iced::{
     color, widget::button, Border, Color, Theme,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 /// Theme mode selection
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
@@ -792,10 +792,11 @@ pub mod system_detection {
     use super::ThemeMode;
     use std::sync::Arc;
     use tokio::sync::watch;
-    use tracing::{debug, error, info};
+    use tracing::{debug, error};
 
     /// System theme watcher that monitors OS theme changes
     pub struct SystemThemeWatcher {
+        #[allow(dead_code)]
         rx: watch::Receiver<ThemeMode>,
         _handle: Arc<tokio::task::JoinHandle<()>>,
     }

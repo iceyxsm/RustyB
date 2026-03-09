@@ -26,6 +26,7 @@ pub struct ExtractionPanel {
     selector: String,
     fields: Vec<ExtractionField>,
     live_preview: bool,
+    #[allow(dead_code)]
     extracted_data: Vec<String>,
     theme: BrowserTheme,
 }
@@ -94,7 +95,7 @@ impl ExtractionPanel {
         }
     }
 
-    pub fn view(&self) -> Element<ExtractionMessage> {
+    pub fn view(&self) -> Element<'_, ExtractionMessage> {
         let theme = &self.theme;
 
         let title = text(self.title())

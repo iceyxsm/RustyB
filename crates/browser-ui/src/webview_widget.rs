@@ -102,7 +102,7 @@ impl Default for WebViewWidget {
 /// This returns a status overlay
 pub fn webview<Message: 'static>(
     widget: &WebViewWidget,
-) -> Element<Message> {
+) -> Element<'_, Message> {
     // The WebView is rendered in a separate window via IPC
     // We show a status overlay
     iced::widget::container(

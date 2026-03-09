@@ -31,6 +31,7 @@ const MAX_INPUT_BATCH_SIZE: usize = 64;
 const FRAME_QUEUE_CAPACITY: usize = 2;
 
 /// Target frame time for 60 FPS (16.67ms)
+#[allow(unused)]
 const TARGET_FRAME_TIME_MS: f64 = 1000.0 / 60.0;
 
 /// Texture format for cross-platform compatibility
@@ -772,7 +773,9 @@ pub struct GpuRenderer {
     /// Texture format
     texture_format: TextureFormat,
     /// Maximum texture dimensions
+    #[allow(dead_code)]
     max_width: u32,
+    #[allow(dead_code)]
     max_height: u32,
 }
 

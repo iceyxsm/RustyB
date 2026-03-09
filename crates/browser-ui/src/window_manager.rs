@@ -4,7 +4,8 @@
 //! - Left: WebView window (actual browser content)
 //! - Right: Iced control panel window
 
-use tracing::{info, error};
+use std::ptr::addr_of;
+use tracing::info;
 
 /// Window layout configuration
 pub struct WindowLayout {
@@ -72,7 +73,7 @@ pub fn init_window_manager() {
 
 /// Get the window layout
 pub fn get_layout() -> Option<&'static WindowLayout> {
-    unsafe { WINDOW_LAYOUT.as_ref() }
+    unsafe { addr_of!(WINDOW_LAYOUT).as_ref().and_then(|r| r.as_ref()) }
 }
 
 /// Calculate positions for split view

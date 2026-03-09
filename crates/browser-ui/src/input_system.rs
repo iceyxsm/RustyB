@@ -36,7 +36,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tracing::{debug, trace, warn};
+use tracing::warn;
 
 // Re-export types from gpu_renderer for compatibility
 pub use crate::gpu_renderer::{InputBatcher, InputEvent as GpuInputEvent};
@@ -1078,7 +1078,7 @@ impl GestureRecognizer {
         }
     }
 
-    fn handle_mouse_down(&mut self, button: MouseButton, x: f64, y: f64) {
+    fn handle_mouse_down(&mut self, _button: MouseButton, x: f64, y: f64) {
         // Start long press timer
         self.long_press_timer = Some(Instant::now());
         self.long_press_pos = Some((x, y));
@@ -1087,7 +1087,7 @@ impl GestureRecognizer {
         self.swipe_start_pos = Some((x, y, Instant::now()));
     }
 
-    fn handle_mouse_up(&mut self, button: MouseButton, x: f64, y: f64, state: &InputState) {
+    fn handle_mouse_up(&mut self, button: MouseButton, x: f64, y: f64, _state: &InputState) {
         // Check for long press
         if let Some(timer) = self.long_press_timer {
             if timer.elapsed().as_millis() >= LONG_PRESS_THRESHOLD_MS {
@@ -1177,7 +1177,7 @@ impl GestureRecognizer {
         }
     }
 
-    fn handle_touch_start(&mut self, id: u64, x: f64, y: f64, state: &InputState) {
+    fn handle_touch_start(&mut self, _id: u64, x: f64, y: f64, state: &InputState) {
         let touch_count = state.touch_count();
 
         if touch_count == 1 {
@@ -1243,7 +1243,7 @@ impl GestureRecognizer {
         }
     }
 
-    fn handle_touch_end(&mut self, id: u64, x: f64, y: f64, state: &InputState) {
+    fn handle_touch_end(&mut self, _id: u64, x: f64, y: f64, state: &InputState) {
         let touch_count = state.touch_count();
 
         if touch_count == 0 {

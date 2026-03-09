@@ -41,6 +41,7 @@ impl DnsCacheEntry {
 pub struct HickoryResolver {
     resolver: Arc<Resolver<TokioConnectionProvider>>,
     cache: Arc<RwLock<HashMap<String, DnsCacheEntry>>>,
+    #[allow(dead_code)]
     config: ResolverConfig,
 }
 

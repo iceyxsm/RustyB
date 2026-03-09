@@ -74,7 +74,7 @@ impl AutomationPanel {
         }
     }
 
-    pub fn view(&self) -> Element<AutomationMessage> {
+    pub fn view(&self) -> Element<'_, AutomationMessage> {
         let theme = &self.theme;
 
         let title = text(self.title())

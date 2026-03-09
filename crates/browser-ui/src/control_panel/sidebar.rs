@@ -56,7 +56,7 @@ impl Sidebar {
         }
     }
 
-    pub fn view(&self) -> Element<SidebarMessage> {
+    pub fn view(&self) -> Element<'_, SidebarMessage> {
         let theme = &self.theme;
 
         // Toggle button at the top
@@ -96,7 +96,7 @@ impl Sidebar {
 
                 button(content)
                     .on_press(SidebarMessage::CategorySelected(*category))
-                    .style(move |_, status| {
+                    .style(move |_, _status| {
                         let mut style = button_style(theme, if is_selected {
                             ButtonStyle::Primary
                         } else {
