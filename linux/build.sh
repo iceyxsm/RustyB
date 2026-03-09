@@ -29,20 +29,19 @@ if ! rustup toolchain list | grep -q nightly; then
     rustup toolchain install nightly
 fi
 
-# Check Cranelift component
-if ! rustup component list --toolchain nightly | grep -q "rustc-codegen-cranelift-preview.*installed"; then
-    echo "Installing Cranelift codegen backend..."
-    rustup component add rustc-codegen-cranelift-preview --toolchain nightly
-fi
-
 # Check system dependencies
 echo "Checking system dependencies..."
 
 MISSING_DEPS=""
 
-# Check for webkit2gtk-4.1
-if ! pkg-config --exists webkit2gtk-4.1; then
-    MISSING_DEPS="$MISSING_DEPS\n  - webkit2gtk-4.1-dev (libwebkit2gtk-4.1-dev)"
+# Check for webkit2gtk-4.1 (preferred) or 4.0 (fallback)
+if pkg-config --exists webkit2gtk-4.1; then
+    WEBKIT_VERSION="4.1"
+elif pkg-config --exists webkit2gtk-4.0; then
+    WEBKIT_VERSION="4.0"
+    echo "Note: webkit2gtk-4.0 found (4.1 preferred)"
+else
+    MISSING_DEPS="$MISSING_DEPS\n  - webkit2gtk-4.1-dev (or webkit2gtk-4.0-dev)"
 fi
 
 # Check for gtk3
@@ -55,19 +54,26 @@ if ! pkg-config --exists libsoup-3.0; then
     MISSING_DEPS="$MISSING_DEPS\n  - libsoup-3.0-dev"
 fi
 
+# Check for additional commonly required dependencies
+for pkg in glib-2.0 cairo-1.0 pango-1.0 gdk-pixbuf-2.0; do
+    if ! pkg-config --exists $pkg; then
+        MISSING_DEPS="$MISSING_DEPS\n  - lib${pkg}-dev"
+    fi
+done
+
 if [ -n "$MISSING_DEPS" ]; then
     echo "Error: Missing system dependencies:"
     echo -e "$MISSING_DEPS"
     echo ""
     echo "Install on Ubuntu/Debian:"
     echo "  sudo apt-get update"
-    echo "  sudo apt-get install libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev"
+    echo "  sudo apt-get install libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev libglib2.0-dev libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev"
     echo ""
     echo "Install on Fedora/RHEL:"
-    echo "  sudo dnf install webkit2gtk4.1-devel gtk3-devel libsoup3-devel"
+    echo "  sudo dnf install webkit2gtk4.1-devel gtk3-devel libsoup3-devel glib2-devel cairo-devel pango-devel gdk-pixbuf2-devel"
     echo ""
     echo "Install on Arch:"
-    echo "  sudo pacman -S webkit2gtk-4.1 gtk3 libsoup3"
+    echo "  sudo pacman -S webkit2gtk-4.1 gtk3 libsoup3 glib2 cairo pango gdk-pixbuf"
     exit 1
 fi
 
@@ -90,7 +96,7 @@ fi
 # Build
 echo ""
 echo "Building Rusty Browser for Linux..."
-echo "This may take 10-20 minutes on first build (downloads CEF/WebKit)"
+echo "This may take 10-20 minutes on first build (downloads dependencies)"
 echo ""
 
 cargo +nightly build --release -p browser-ui -p rusty-browser-webview
@@ -122,7 +128,3 @@ echo ""
 echo "Or run from anywhere (both must be in same directory):"
 echo "  ./target/release/rusty-browser"
 echo ""
-
-# Restore Windows config (optional - comment out if you want to keep Linux config)
-# Uncomment the next line if you want to auto-restore Windows config after build
-# git checkout .cargo/config.toml 2>/dev/null || true
