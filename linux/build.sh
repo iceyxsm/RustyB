@@ -1,18 +1,13 @@
 #!/bin/bash
 # ============================================
 # Rusty Browser - Linux Build Script
-# Auto-installs dependencies and builds
+# Auto-detects and installs missing dependencies
 # ============================================
 
 set -e  # Exit on error
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-
-AUTO_INSTALL=false
-if [ "$1" == "--install" ] || [ "$1" == "-i" ]; then
-    AUTO_INSTALL=true
-fi
 
 echo "=========================================="
 echo "Rusty Browser - Linux Build"
@@ -30,145 +25,169 @@ fi
 echo "Detected distro: $DISTRO"
 echo ""
 
-# Install function
+# Package definitions
+UBUNTU_PACKAGES=(
+    "pkg-config:pkg-config"
+    "libwebkit2gtk-4.1-dev:webkit2gtk-4.1"
+    "libgtk-3-dev:gtk+-3.0"
+    "libsoup-3.0-dev:libsoup-3.0"
+    "libglib2.0-dev:glib-2.0"
+    "libcairo2-dev:cairo"
+    "libpango1.0-dev:pango"
+    "libgdk-pixbuf2.0-dev:gdk-pixbuf-2.0"
+    "libssl-dev:openssl"
+    "build-essential:"
+)
+
+FEDORA_PACKAGES=(
+    "pkgconf:pkg-config"
+    "webkit2gtk4.1-devel:webkit2gtk-4.1"
+    "gtk3-devel:gtk+-3.0"
+    "libsoup3-devel:libsoup-3.0"
+    "glib2-devel:glib-2.0"
+    "cairo-devel:cairo"
+    "pango-devel:pango"
+    "gdk-pixbuf2-devel:gdk-pixbuf-2.0"
+    "openssl-devel:openssl"
+    "gcc:"
+)
+
+ARCH_PACKAGES=(
+    "pkgconf:pkg-config"
+    "webkit2gtk-4.1:webkit2gtk-4.1"
+    "gtk3:gtk+-3.0"
+    "libsoup3:libsoup-3.0"
+    "glib2:glib-2.0"
+    "cairo:cairo"
+    "pango:pango"
+    "gdk-pixbuf2:gdk-pixbuf-2.0"
+    "openssl:openssl"
+    "base-devel:"
+)
+
+# Function to check if package is installed (by pkg-config name or command)
+check_package() {
+    local pkg_config_name="$1"
+    local cmd_name="$2"
+    
+    # If pkg-config name provided, check with pkg-config
+    if [ -n "$pkg_config_name" ]; then
+        if pkg-config --exists "$pkg_config_name" 2>/dev/null; then
+            return 0  # Found
+        fi
+    fi
+    
+    # If command name provided, check command exists
+    if [ -n "$cmd_name" ]; then
+        if command -v "$cmd_name" &> /dev/null; then
+            return 0  # Found
+        fi
+    fi
+    
+    return 1  # Not found
+}
+
+# Function to install packages based on distro
 install_packages() {
+    local packages=("$@")
+    local to_install=()
+    
+    echo "Checking required packages..."
+    echo ""
+    
+    for pkg_def in "${packages[@]}"; do
+        IFS=':' read -r pkg_name pkg_check <<< "$pkg_def"
+        
+        if check_package "$pkg_check" "$pkg_check"; then
+            echo "  ✓ $pkg_name (found)"
+        else
+            echo "  ✗ $pkg_name (missing)"
+            to_install+=("$pkg_name")
+        fi
+    done
+    
+    if [ ${#to_install[@]} -eq 0 ]; then
+        echo ""
+        echo "All dependencies satisfied!"
+        return 0
+    fi
+    
+    echo ""
+    echo "Installing missing packages: ${to_install[*]}"
+    echo ""
+    
     case $DISTRO in
         ubuntu|debian)
-            echo "Installing packages via apt..."
             sudo apt-get update
-            sudo apt-get install -y \
-                libwebkit2gtk-4.1-dev \
-                libgtk-3-dev \
-                libsoup-3.0-dev \
-                libglib2.0-dev \
-                libcairo2-dev \
-                libpango1.0-dev \
-                libgdk-pixbuf2.0-dev \
-                libssl-dev \
-                pkg-config \
-                build-essential \
-                curl
+            sudo apt-get install -y "${to_install[@]}"
             ;;
         fedora|rhel|centos)
-            echo "Installing packages via dnf..."
-            sudo dnf install -y \
-                webkit2gtk4.1-devel \
-                gtk3-devel \
-                libsoup3-devel \
-                glib2-devel \
-                cairo-devel \
-                pango-devel \
-                gdk-pixbuf2-devel \
-                openssl-devel \
-                pkgconf \
-                gcc \
-                curl
+            sudo dnf install -y "${to_install[@]}"
             ;;
         arch|manjaro)
-            echo "Installing packages via pacman..."
-            sudo pacman -Sy --noconfirm \
-                webkit2gtk-4.1 \
-                gtk3 \
-                libsoup3 \
-                glib2 \
-                cairo \
-                pango \
-                gdk-pixbuf2 \
-                openssl \
-                pkgconf \
-                base-devel \
-                curl
+            sudo pacman -Sy --noconfirm "${to_install[@]}"
             ;;
         *)
-            echo "Unknown distro. Please install packages manually."
+            echo "Error: Unknown distro '$DISTRO'"
+            echo "Please install manually: ${to_install[*]}"
             return 1
             ;;
     esac
+    
+    echo ""
+    echo "Packages installed successfully!"
 }
 
-# Check prerequisites
-echo "Checking prerequisites..."
+# Install dependencies
+echo "Checking and installing dependencies..."
+echo ""
+
+case $DISTRO in
+    ubuntu|debian)
+        install_packages "${UBUNTU_PACKAGES[@]}"
+        ;;
+    fedora|rhel|centos)
+        install_packages "${FEDORA_PACKAGES[@]}"
+        ;;
+    arch|manjaro)
+        install_packages "${ARCH_PACKAGES[@]}"
+        ;;
+    *)
+        echo "Warning: Unknown distro '$DISTRO'"
+        echo "Assuming packages are already installed..."
+        ;;
+esac
+
+echo ""
 
 # Check Rust
+echo "Checking Rust toolchain..."
 if ! command -v rustc &> /dev/null; then
     echo "Rust not found. Installing..."
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    curl --proto '=https' --tls=v1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     source "$HOME/.cargo/env"
+    echo "Rust installed!"
+else
+    echo "  ✓ Rust ($(rustc --version))"
 fi
 
 # Check nightly toolchain
 if ! rustup toolchain list 2>/dev/null | grep -q nightly; then
-    echo "Installing nightly toolchain..."
+    echo "  Installing nightly toolchain..."
     rustup toolchain install nightly
+else
+    echo "  ✓ Nightly toolchain"
 fi
 
 # Check for Cranelift (optional)
 if ! rustup component list --toolchain nightly 2>/dev/null | grep -q "rustc-codegen-cranelift.*installed"; then
-    echo "Installing Cranelift codegen backend..."
+    echo "  Installing Cranelift..."
     rustup component add rustc-codegen-cranelift-preview --toolchain nightly 2>/dev/null || true
-fi
-
-# Check system dependencies
-echo "Checking system dependencies..."
-
-MISSING_DEPS=""
-
-# Check for pkg-config
-if ! command -v pkg-config &> /dev/null; then
-    MISSING_DEPS="$MISSING_DEPS pkg-config"
-fi
-
-# Check for webkit2gtk
-if pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
-    WEBKIT_VERSION="4.1"
-elif pkg-config --exists webkit2gtk-4.0 2>/dev/null; then
-    WEBKIT_VERSION="4.0"
-    echo "Note: webkit2gtk-4.0 found (4.1 preferred)"
 else
-    MISSING_DEPS="$MISSING_DEPS webkit2gtk"
+    echo "  ✓ Cranelift backend"
 fi
 
-# Check for other required packages
-for pkg in gtk+-3.0 libsoup-3.0 glib-2.0 cairo pango gdk-pixbuf-2.0; do
-    if ! pkg-config --exists $pkg 2>/dev/null; then
-        MISSING_DEPS="$MISSING_DEPS $pkg"
-    fi
-done
-
-# Check for OpenSSL (needed for reqwest, hyper)
-if ! pkg-config --exists openssl 2>/dev/null; then
-    MISSING_DEPS="$MISSING_DEPS openssl"
-fi
-
-# Install missing packages if auto-install enabled
-if [ -n "$MISSING_DEPS" ]; then
-    echo "Missing dependencies:$MISSING_DEPS"
-    
-    if [ "$AUTO_INSTALL" = true ]; then
-        echo ""
-        echo "Auto-installing dependencies..."
-        install_packages
-    else
-        echo ""
-        echo "Install command:"
-        case $DISTRO in
-            ubuntu|debian)
-                echo "  sudo apt-get update"
-                echo "  sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev libglib2.0-dev libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev libssl-dev pkg-config build-essential"
-                ;;
-            fedora|rhel|centos)
-                echo "  sudo dnf install -y webkit2gtk4.1-devel gtk3-devel libsoup3-devel glib2-devel cairo-devel pango-devel gdk-pixbuf2-devel openssl-devel pkgconf"
-                ;;
-            arch|manjaro)
-                echo "  sudo pacman -S webkit2gtk-4.1 gtk3 libsoup3 glib2 cairo pango gdk-pixbuf2 openssl pkgconf base-devel"
-                ;;
-        esac
-        echo ""
-        echo "Or run: bash linux/build.sh --install"
-        exit 1
-    fi
-fi
-
+echo ""
 echo "All prerequisites satisfied!"
 echo ""
 
@@ -180,7 +199,7 @@ cp "$SCRIPT_DIR/config.toml" "$PROJECT_ROOT/.cargo/config.toml"
 cd "$PROJECT_ROOT"
 
 # Clean previous builds (optional)
-if [ "$1" == "--clean" ] || [ "$2" == "--clean" ]; then
+if [ "$1" == "--clean" ]; then
     echo "Cleaning previous builds..."
     cargo clean
 fi

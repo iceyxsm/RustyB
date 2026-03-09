@@ -6,48 +6,38 @@ This directory contains Linux-specific build configuration and scripts for Rusty
 
 ```bash
 # From project root, run:
-bash linux/build.sh --install
+bash linux/build.sh
 ```
 
-The `--install` flag automatically installs all required system dependencies.
-
-### Manual Dependency Install
-
-If you prefer to install dependencies manually:
-
-```bash
-# Ubuntu/Debian
-sudo apt-get update
-sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
-    libglib2.0-dev libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev \
-    libssl-dev pkg-config build-essential
-
-# Fedora/RHEL
-sudo dnf install -y webkit2gtk4.1-devel gtk3-devel libsoup3-devel \
-    glib2-devel cairo-devel pango-devel gdk-pixbuf2-devel \
-    openssl-devel pkgconf
-
-# Arch
-sudo pacman -S webkit2gtk-4.1 gtk3 libsoup3 glib2 cairo pango \
-    gdk-pixbuf2 openssl pkgconf base-devel
-```
+The script will:
+1. Check which dependencies are missing
+2. Install only the missing ones
+3. Build the project
 
 ## Prerequisites
 
-### Required Packages
+The script auto-detects your distro and installs missing packages:
 
 | Package | Purpose |
 |---------|---------|
 | webkit2gtk-4.1-dev | WebView backend (WebKitGTK) |
 | libgtk-3-dev | GTK3 UI framework |
 | libsoup-3.0-dev | HTTP client/server |
-| libssl-dev | TLS/HTTPS support (OpenSSL) |
-| libcairo2-dev | 2D graphics library |
+| libssl-dev | TLS/HTTPS support |
+| libcairo2-dev | 2D graphics |
 | libpango1.0-dev | Text rendering |
 | libglib2.0-dev | Core utilities |
 | libgdk-pixbuf2.0-dev | Image loading |
 | pkg-config | Package detection |
 | build-essential | GCC, make, etc. |
+
+### Supported Distros
+
+- **Ubuntu/Debian** - uses `apt-get`
+- **Fedora/RHEL/CentOS** - uses `dnf`
+- **Arch/Manjaro** - uses `pacman`
+
+### Manual Install (if needed)
 
 **Ubuntu/Debian:**
 ```bash
@@ -64,46 +54,44 @@ sudo dnf install -y webkit2gtk4.1-devel gtk3-devel libsoup3-devel \
     openssl-devel pkgconf gcc
 ```
 
-**Arch Linux:**
+**Arch:**
 ```bash
 sudo pacman -S webkit2gtk-4.1 gtk3 libsoup3 glib2 cairo pango \
     gdk-pixbuf2 openssl pkgconf base-devel
 ```
 
-> **Note:** If webkit2gtk-4.1 is not available on your distribution, the build script will fallback to webkit2gtk-4.0.
-
-### Rust Toolchain
-
-The build script will automatically install:
-- Nightly Rust toolchain
-- Cranelift codegen backend (for faster builds with less memory)
-
 ## Build Script Options
 
 ```bash
-# Auto-install dependencies and build
-bash linux/build.sh --install
-
-# Install dependencies and clean build
-bash linux/build.sh --install --clean
-
-# Just build (assumes deps already installed)
+# Standard build (checks deps, installs missing, builds)
 bash linux/build.sh
 
-# Clean build only (removes previous artifacts)
+# Clean build (removes previous artifacts)
 bash linux/build.sh --clean
 ```
 
-## Manual Build
+## What the Script Does
 
-If you prefer to build manually:
+1. **Detects distro** - Identifies your Linux distribution
+2. **Checks each package** - Uses `pkg-config` to see what's installed
+3. **Shows status** - ✓ for found, ✗ for missing
+4. **Installs missing** - Only installs packages that are actually needed
+5. **Checks Rust** - Installs Rust if not present
+6. **Builds** - Compiles both binaries
 
-```bash
-# Apply Linux config
-cp linux/config.toml .cargo/config.toml
+Example output:
+```
+Checking required packages...
+  ✓ pkg-config (found)
+  ✓ libwebkit2gtk-4.1-dev (found)
+  ✓ libgtk-3-dev (found)
+  ✗ libsoup-3.0-dev (missing)
+  ✓ libssl-dev (found)
+  ...
 
-# Build both binaries
-cargo +nightly build --release -p browser-ui -p rusty-browser-webview
+Installing missing packages: libsoup-3.0-dev
+...
+Packages installed successfully!
 ```
 
 ## Running
@@ -118,8 +106,8 @@ cd target/release
 
 The Linux build uses:
 - **WebView Backend**: WebKitGTK 4.1 (via WRY)
-- **Linker**: rust-lld (LLVM linker)
-- **Codegen**: Cranelift (faster compilation, lower memory usage)
+- **Linker**: Standard system linker
+- **Codegen**: Standard LLVM (stable)
 
 ## Troubleshooting
 
