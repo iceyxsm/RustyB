@@ -7,19 +7,19 @@ A **hybrid browser** built in Rust combining a native Iced UI with system WebVie
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Rusty Browser                                │
-├─────────────────────────────────────────────────────────────────┤
-│  Main Process (Iced UI)                                         │
+┌────────────────────────────────────────────────────────────────┐
+│                     Rusty Browser                              │
+├────────────────────────────────────────────────────────────────┤
+│  Main Process (Iced UI)                                        │
 │  ┌────────────────┐  ┌────────────────┐  ┌─────────────────┐   │
 │  │   Toolbar      │  │  Address Bar   │  │   Status Bar    │   │
 │  │   (Rust)       │  │   (Rust)       │  │   (Rust)        │   │
 │  └────────────────┘  └────────────────┘  └─────────────────┘   │
-│                                                                  │
-│  IPC Controller (JSON-RPC over stdin/stdout)                    │
-│  ├─ Commands: Navigate, Reload, Back/Forward, Execute JS        │
+│                                                                │
+│  IPC Controller (JSON-RPC over stdin/stdout)                   │
+│  ├─ Commands: Navigate, Reload, Back/Forward, Execute JS       │
 │  └─ Events: Load, Title, URL, Navigation, Errors               │
-└─────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
@@ -27,10 +27,10 @@ A **hybrid browser** built in Rust combining a native Iced UI with system WebVie
 │              (Separate Process - Tao + Wry)                     │
 ├─────────────────────────────────────────────────────────────────┤
 │  Native Window + System WebView                                 │
-│  ├─ Windows: Edge WebView2 (system)                            │
-│  ├─ macOS:   WebKit WKWebView (system)                         │
-│  └─ Linux:   WebKitGTK (system)                                │
-│                                                                  │
+│  ├─ Windows: Edge WebView2 (system)                             │
+│  ├─ macOS:   WebKit WKWebView (system)                          │
+│  └─ Linux:   WebKitGTK (system)                                 │
+│                                                                 │
 │  Event Handlers → JSON stdout                                   │
 │  stdin ← Command Parser → WebView API                           │
 └─────────────────────────────────────────────────────────────────┘
@@ -47,7 +47,7 @@ A **hybrid browser** built in Rust combining a native Iced UI with system WebVie
 
 ## Features
 
-### ✅ Implemented
+###  Implemented
 
 #### Core Browser
 - **Hybrid UI/Rendering** - Iced toolbar + WebView content window
@@ -82,7 +82,7 @@ A **hybrid browser** built in Rust combining a native Iced UI with system WebVie
 - **REST API** - HTTP-based commands
 - **Command Protocol** - Structured automation
 
-### 🚧 In Progress / Planned
+###  In Progress / Planned
 
 - [ ] Embedded WebView (single window via win32 child windows)
 - [ ] Extension system
@@ -340,13 +340,13 @@ Install Edge WebView2 Runtime:
 
 ## Roadmap
 
-### Phase 1: Foundation ✅
+### Phase 1: Foundation 
 - [x] Hybrid Iced + WebView architecture
 - [x] IPC system (JSON-RPC)
 - [x] Multi-process separation
 - [x] Network layer (proxy, TLS, DNS)
 
-### Phase 2: Core Features ✅
+### Phase 2: Core Features 
 - [x] Navigation (address bar, back/forward)
 - [x] Tab management
 - [x] URL/title synchronization
