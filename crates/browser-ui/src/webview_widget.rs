@@ -84,6 +84,11 @@ impl WebViewWidget {
     pub fn poll(&self) -> Vec<WebViewEvent> {
         self.webview.poll()
     }
+    
+    /// Get the controller for direct access
+    pub fn controller(&self) -> std::sync::Arc<crate::webview_ipc::WebViewController> {
+        self.webview.controller()
+    }
 }
 
 impl Default for WebViewWidget {

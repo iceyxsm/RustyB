@@ -18,6 +18,9 @@ use serde::{Serialize, Deserialize};
 use tracing::{info, error, debug};
 
 /// WebView subprocess path - will be compiled as separate binary
+#[cfg(target_os = "windows")]
+const WEBVIEW_SUBPROCESS: &str = "rusty-browser-webview.exe";
+#[cfg(not(target_os = "windows"))]
 const WEBVIEW_SUBPROCESS: &str = "rusty-browser-webview";
 
 /// JSON-RPC messages to WebView

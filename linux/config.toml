@@ -1,0 +1,37 @@
+# ============================================
+# Rust Build Configuration for Linux
+# Uses Cranelift Backend (50% less memory, 30-70% faster builds)
+# ============================================
+
+[build]
+# Limit to 2 parallel jobs for 10GB RAM constraint
+jobs = 2
+
+# Use rust-lld linker (Linux version - no .exe extension)
+rustflags = [
+    "-C", "linker=rust-lld",
+]
+
+# ============================================
+# Enable Cranelift (MUCH less memory than LLVM)
+# ============================================
+[unstable]
+codegen-backend = true
+
+[profile.dev]
+codegen-backend = "cranelift"
+incremental = true
+
+[profile.release]
+codegen-backend = "cranelift"
+opt-level = 2
+debug = false
+lto = false
+panic = "abort"
+strip = true
+
+# ============================================
+# Linux Linker Configuration
+# ============================================
+[target.x86_64-unknown-linux-gnu]
+linker = "rust-lld"

@@ -660,6 +660,31 @@ impl BrowserTheme {
     pub fn warning_color(&self) -> Color {
         self.colors.warning_text
     }
+
+    /// Get the surface color (for cards, panels)
+    pub fn surface_color(&self) -> Color {
+        self.colors.toolbar_background
+    }
+
+    /// Get the border color
+    pub fn border_color(&self) -> Color {
+        self.colors.divider
+    }
+
+    /// Get the success color
+    pub fn success_color(&self) -> Color {
+        self.colors.address_bar_secure
+    }
+
+    /// Get the info color
+    pub fn info_color(&self) -> Color {
+        self.colors.accent
+    }
+
+    /// Get the background color
+    pub fn background_color(&self) -> Color {
+        self.colors.content_background
+    }
 }
 
 /// Theme persistence for saving/loading user preferences
@@ -957,6 +982,8 @@ pub enum ContainerStyle {
     Error,
     /// Warning state container
     Warning,
+    /// Card/container for tools
+    Card,
 }
 
 impl Default for ContainerStyle {
@@ -976,6 +1003,7 @@ pub fn container_background(theme: &BrowserTheme, style: ContainerStyle) -> Colo
         ContainerStyle::Tooltip => theme.colors.tooltip_background,
         ContainerStyle::Error => theme.colors.error_background,
         ContainerStyle::Warning => theme.colors.warning_background,
+        ContainerStyle::Card => theme.colors.toolbar_button_hover,
     }
 }
 

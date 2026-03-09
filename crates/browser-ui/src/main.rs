@@ -1,22 +1,27 @@
-//! Rusty Browser - A custom Rust-based browser with Servo rendering
+//! Rusty Browser - Hybrid Mode (Control Panel + WebView)
 //!
-//! This is the main entry point for the Rusty Browser application.
-//! It uses Iced 0.14 for the UI and integrates Servo for web rendering.
+//! Window 1: Control Panel (Iced) - positioned at left
+//! Window 2: WebView (Edge WebView2 via WRY) - positioned at right
 
-use browser_ui::integrated_app::{IntegratedBrowserApp, Message};
+use browser_ui::hybrid_app::{HybridBrowserApp, Message};
+use iced::window;
 
 fn main() -> iced::Result {
-    // Initialize tracing for logging
     tracing_subscriber::fmt::init();
 
-    // Run the integrated browser application
     iced::application(
-        IntegratedBrowserApp::default,
-        IntegratedBrowserApp::update,
-        IntegratedBrowserApp::view,
+        HybridBrowserApp::default,
+        HybridBrowserApp::update,
+        HybridBrowserApp::view,
     )
-    .title(IntegratedBrowserApp::title)
-    .subscription(IntegratedBrowserApp::subscription)
-    .theme(IntegratedBrowserApp::theme)
+    .title(HybridBrowserApp::title)
+    .subscription(HybridBrowserApp::subscription)
+    .theme(HybridBrowserApp::theme)
+    .window(window::Settings {
+        size: iced::Size::new(550.0, 800.0),
+        position: window::Position::Specific(iced::Point::new(100.0, 100.0)),
+        min_size: Some(iced::Size::new(400.0, 600.0)),
+        ..Default::default()
+    })
     .run()
 }

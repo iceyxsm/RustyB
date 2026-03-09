@@ -19,7 +19,7 @@ hyper-util = { version = "0.1", features = ["full", "tokio"] }
 tower.workspace = true
 
 # TLS
-rustls = { version = "0.23", features = ["ring"] }
+rustls = { version = "0.23", features = ["ring"], default-features = false }
 rustls-pemfile = "2.0"
 rustls-native-certs = "0.8"
 tokio-rustls.workspace = true

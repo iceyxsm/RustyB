@@ -9,8 +9,11 @@
 //! - Comprehensive theme system with dark/light/high-contrast modes
 
 pub mod app;
+pub mod control_panel;
+pub mod embedded_webview;
 pub mod event_loop_waker;
 pub mod gpu_renderer;
+pub mod hybrid_app;
 pub mod input_system;
 pub mod integrated_app;
 pub mod servo_integration;
@@ -18,10 +21,15 @@ pub mod servo_renderer;
 pub mod theme;
 pub mod webview_widget;
 pub mod webview_ipc;
+pub mod window_manager;
 
 // Re-export main types for convenience
+pub mod single_window_app;
+pub mod two_window_app;
+
 pub use app::{BrowserApp, Message as AppMessage};
 pub use gpu_renderer::{GpuRenderer, RenderMode, InputEvent as GpuInputEvent, InputBatcher, FpsProfiler, GpuFrame};
+pub use hybrid_app::{HybridBrowserApp, Message as HybridMessage};
 pub use input_system::{
     InputManager, InputState, InputEvent, GestureRecognizer, Gesture,
     FocusManager, FocusId, FocusableElement,
