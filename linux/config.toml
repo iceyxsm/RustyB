@@ -1,30 +1,16 @@
 # ============================================
 # Rust Build Configuration for Linux
-# Memory-optimized build settings
+# Using standard LLVM backend (more stable)
 # ============================================
 
 [build]
 # Limit to 2 parallel jobs for 10GB RAM constraint
 jobs = 2
 
-# Use rust-lld linker (faster than default linker)
-rustflags = [
-    "-C", "linker=rust-lld",
-]
-
-[profile.dev]
-incremental = true
-opt-level = 0
-
 [profile.release]
-opt-level = 2
+opt-level = 1
 debug = false
+codegen-units = 256
 lto = false
 panic = "abort"
 strip = true
-
-# ============================================
-# Linux Linker Configuration
-# ============================================
-[target.x86_64-unknown-linux-gnu]
-linker = "rust-lld"
